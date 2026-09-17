@@ -1,0 +1,11 @@
+^LICENSE\.md$
+^\.Rproj\.user$
+^devforge\.Rproj$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
+^[.]?air[.]toml$
+^\.vscode$
+^\.claude$
+^renovate\.json$
