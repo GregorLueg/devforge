@@ -86,10 +86,12 @@ emit_checker <- function(spec) {
   }
   check_name <- paste0("check", spec$checker, "Params")
   assert_name <- paste0("assert", spec$checker, "Params")
-  hint_arg <- if (is.null(spec$hint)) {
-    character(0)
-  } else {
-    c(",", sprintf("hint = %s", deparse_value(spec$hint)))
+  # The comma belongs on the end of the label line, not on one of its own.
+  label_arg <- sprintf("label = %s", deparse_value(spec$label))
+  hint_arg <- character(0)
+  if (!is.null(spec$hint)) {
+    label_arg <- paste0(label_arg, ",")
+    hint_arg <- sprintf("hint = %s", deparse_value(spec$hint))
   }
 
   shape_args <- list("x", emit_char_vector(spec_field_names(spec)))
@@ -106,7 +108,7 @@ emit_checker <- function(spec) {
         "apply_qtest_rules(",
         indent("x,"),
         indent(emit_rules_list(qtest_rules, trailing_comma = TRUE)),
-        indent(sprintf("label = %s", deparse_value(spec$label))),
+        indent(label_arg),
         indent(hint_arg),
         ")"
       ))
@@ -121,7 +123,7 @@ emit_checker <- function(spec) {
         "apply_choice_rules(",
         indent("x,"),
         indent(emit_rules_list(choice_rules, trailing_comma = TRUE)),
-        indent(sprintf("label = %s", deparse_value(spec$label))),
+        indent(label_arg),
         indent(hint_arg),
         ")"
       ))
@@ -179,12 +181,27 @@ emit_checker <- function(spec) {
     "#' @keywords internal"
   )
 
+  assert_roxygen <- c(
+    sprintf("#' Assert %s", spec$label),
+    "#'",
+    sprintf("#' @inheritParams %s", check_name),
+    "#' @param .var.name Name of the checked object to print in assertions.",
+    "#' @param add Collection to store assertion messages. See",
+    "#' [checkmate::makeAssertCollection()].",
+    "#'",
+    "#' @returns Invisibly returns the checked object if the assertion is",
+    "#' successful.",
+    "#'",
+    "#' @keywords internal"
+  )
+
   out <- c(
     roxygen,
     sprintf("%s <- function(%s) {", check_name, formals_src),
     indent(body),
     "}",
     "",
+    assert_roxygen,
     prefix_first(
       paste0(assert_name, " <- "),
       emit_call(
@@ -198,6 +215,14 @@ emit_checker <- function(spec) {
     out <- c(
       out,
       "",
+      sprintf("#' Test %s", spec$label),
+      "#'",
+      sprintf("#' @inheritParams %s", check_name),
+      "#'",
+      "#' @returns Boolean. `TRUE` if the check was successful, otherwise",
+      "#' `FALSE`.",
+      "#'",
+      "#' @keywords internal",
       prefix_first(
         paste0("test", spec$checker, "Params <- "),
         emit_call(

@@ -203,20 +203,58 @@ prefix_first <- function(prefix, lines) {
 #' braces come off.
 #'
 #' @param expr A language object, or `NULL`.
+#' @param budget Integer. Characters available per line once the block has
+#' landed at its nesting level. Defaults to `78L`, the 80 character width less
+#' the one level of indent the constructor and checker bodies put it at.
 #'
 #' @returns Character vector of R source lines. Empty for `NULL`.
 #'
 #' @keywords internal
-deparse_block <- function(expr) {
+deparse_block <- function(expr, budget = 78L) {
   if (is.null(expr)) {
     return(character(0))
   }
-  lines <- if (is.call(expr) && identical(expr[[1L]], as.name("{"))) {
-    unlist(lapply(as.list(expr)[-1L], deparse), use.names = FALSE)
+  checkmate::qassert(budget, "I1[1,)")
+  stmts <- if (is.call(expr) && identical(expr[[1L]], as.name("{"))) {
+    as.list(expr)[-1L]
   } else {
-    deparse(expr)
+    list(expr)
   }
-  halve_indent(lines)
+  lines <- unlist(
+    lapply(stmts, \(stmt) deparse_within(stmt, budget)),
+    use.names = FALSE
+  )
+  # A tighter width.cutoff leaves a trailing space on every broken line.
+  halve_indent(sub(" +$", "", lines))
+}
+
+#' Deparse one statement, tightening the cutoff if it comes out too wide
+#'
+#' @description `width.cutoff` is a hint to [base::deparse()], not a limit: the
+#' default of 60 happily returns a 95 character line. Nothing can be done about
+#' an unbreakable literal, but a call with several arguments does break once
+#' the cutoff is low enough, so try that before giving up.
+#'
+#' @param stmt A language object.
+#' @param budget Integer. Characters available per line, measured after
+#' [halve_indent()].
+#'
+#' @returns Character vector of R source lines.
+#'
+#' @keywords internal
+deparse_within <- function(stmt, budget) {
+  checkmate::qassert(budget, "I1[1,)")
+  lines <- deparse(stmt)
+  if (!any(nchar(halve_indent(lines)) > budget)) {
+    return(lines)
+  }
+  for (cutoff in c(40L, 20L)) {
+    retry <- deparse(stmt, width.cutoff = cutoff)
+    if (!any(nchar(halve_indent(sub(" +$", "", retry))) > budget)) {
+      return(retry)
+    }
+  }
+  lines
 }
 
 #' Halve the indentation of deparsed source

@@ -4,10 +4,14 @@
 \alias{deparse_block}
 \title{Deparse a quoted expression, unwrapping an outer brace block}
 \usage{
-deparse_block(expr)
+deparse_block(expr, budget = 78L)
 }
 \arguments{
 \item{expr}{A language object, or \code{NULL}.}
+
+\item{budget}{Integer. Characters available per line once the block has
+landed at its nesting level. Defaults to \code{78L}, the 80 character width less
+the one level of indent the constructor and checker bodies put it at.}
 }
 \value{
 Character vector of R source lines. Empty for \code{NULL}.
