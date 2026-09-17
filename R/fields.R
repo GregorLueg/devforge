@@ -27,6 +27,9 @@ QASSERT_LETTERS <- c(
 #' @param choices Character vector or `NULL`. Allowed values for `"choice"`.
 #' @param letter String or `NULL`. Overrides the qassert base letter, for the
 #' rare case where a stricter class is wanted (`"R"` instead of `"N"`).
+#' @param check_as Character vector or `NULL`. Overrides the pattern used in
+#' the checker's rule table. For fields the constructor resolves, such as a
+#' worker count that takes `NULL` and comes back as an integer.
 #' @param doc String or `NULL`. Roxygen prose for this field.
 #'
 #' @returns A list of class `devforge_field`.
@@ -40,6 +43,7 @@ new_field <- function(
   len = 1L,
   choices = NULL,
   letter = NULL,
+  check_as = NULL,
   doc = NULL
 ) {
   checkmate::assertChoice(
@@ -50,6 +54,7 @@ new_field <- function(
   checkmate::qassert(null_ok, "B1")
   checkmate::qassert(choices, c("S+", "0"))
   checkmate::qassert(letter, c("S1", "0"))
+  checkmate::qassert(check_as, c("S+", "0"))
   checkmate::qassert(doc, c("S1", "0"))
   if (!(checkmate::testCount(len) || checkmate::testChoice(len, c("+", "*")))) {
     stop("`len` must be a non-negative count, \"+\" or \"*\".")
@@ -63,6 +68,7 @@ new_field <- function(
       len = len,
       choices = choices,
       letter = letter,
+      check_as = check_as,
       doc = doc
     ),
     class = "devforge_field"
@@ -78,12 +84,19 @@ new_field <- function(
 #'
 #' @param field A `devforge_field`.
 #'
+#' @param for_check Boolean. Return the checker's pattern, which `check_as`
+#' may override, rather than the constructor's. Defaults to `FALSE`.
+#'
 #' @returns Character vector of qassert patterns, or `NULL` for a `"free"`
 #' field, which carries no automatic validation.
 #'
 #' @keywords internal
-field_qassert <- function(field) {
+field_qassert <- function(field, for_check = FALSE) {
   checkmate::assertClass(field, "devforge_field")
+  checkmate::qassert(for_check, "B1")
+  if (for_check && !is.null(field$check_as)) {
+    return(field$check_as)
+  }
   if (identical(field$type, "free")) {
     return(NULL)
   }
@@ -101,6 +114,8 @@ field_qassert <- function(field) {
 #' @param null_ok Boolean. Whether `NULL` is permitted. Defaults to `FALSE`.
 #' @param len Integer or string. `1L` for a scalar, `"+"` for one or more.
 #' Defaults to `1L`.
+#' @param check_as Character vector or `NULL`. Overrides the checker's pattern,
+#' for a field the constructor resolves before returning it.
 #' @param doc String or `NULL`. Roxygen prose for this field.
 #'
 #' @returns A `devforge_field`.
@@ -111,6 +126,7 @@ p_int <- function(
   range = NULL,
   null_ok = FALSE,
   len = 1L,
+  check_as = NULL,
   doc = NULL
 ) {
   new_field(
@@ -119,6 +135,7 @@ p_int <- function(
     range = range,
     null_ok = null_ok,
     len = len,
+    check_as = check_as,
     doc = doc
   )
 }

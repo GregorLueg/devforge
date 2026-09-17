@@ -112,7 +112,8 @@ field_doc_prose <- function(field) {
 #' @keywords internal
 roxygen_itemize <- function(spec) {
   checkmate::assertClass(spec, "devforge_spec")
-  items <- purrr::imap(spec$fields, \(field, name) {
+  ordered <- spec$fields[spec_field_names(spec)]
+  items <- purrr::imap(ordered, \(field, name) {
     wrap_roxygen(
       paste0(name, " - ", field_doc_prose(field)),
       prefix = "#'  \\item ",
@@ -137,6 +138,14 @@ emit_ctor_roxygen <- function(spec) {
       lines,
       "#'",
       wrap_roxygen(spec$description, prefix = "#' @description ")
+    )
+  }
+  if (!is.null(spec$details)) {
+    lines <- c(
+      lines,
+      "#'",
+      "#' @details",
+      paste0("#' ", strsplit(spec$details, "\n", fixed = TRUE)[[1L]])
     )
   }
   if (!spec$defaults_only) {
@@ -206,17 +215,18 @@ emit_ctor <- function(spec) {
   checkmate::assertClass(spec, "devforge_spec")
   fn_name <- paste0("params_", spec$name)
   names_vec <- names(spec$fields)
+  ret_names <- spec_field_names(spec)
   body_list <- c(
     "list(",
     indent(paste0(
-      names_vec,
+      ret_names,
       " = ",
       if (spec$defaults_only) {
-        purrr::map_chr(spec$fields, field_value_src)
+        purrr::map_chr(spec$fields[ret_names], field_value_src)
       } else {
-        names_vec
+        ret_names
       },
-      c(rep(",", length(names_vec) - 1L), "")
+      c(rep(",", length(ret_names) - 1L), "")
     )),
     ")"
   )
@@ -246,7 +256,7 @@ emit_ctor <- function(spec) {
     character(0)
   }
   extra <- if (!is.null(spec$extra_ctor)) {
-    c("", deparse(spec$extra_ctor))
+    c("", deparse_block(spec$extra_ctor))
   } else {
     character(0)
   }

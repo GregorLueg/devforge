@@ -13,6 +13,11 @@
 #' formals and of the returned list.
 #' @param description String or `NULL`. Roxygen `@description` prose. Defaults
 #' to `NULL`.
+#' @param details String or `NULL`. Roxygen `@details` prose, emitted verbatim
+#' so it can carry its own `\itemize{}`. Defaults to `NULL`.
+#' @param return_order Character vector or `NULL`. The order of the returned
+#' list, when it differs from the order of the formals. Must be a permutation
+#' of `names(fields)`. Defaults to `NULL`, meaning the order of the formals.
 #' @param checker String or `NULL`. PascalCase stem for the checkmate
 #' extension, giving `check<stem>Params()` and `assert<stem>Params()`. Two
 #' specs may share a stem, in which case the checker is emitted once and the
@@ -48,6 +53,8 @@ param_spec <- function(
   title,
   fields,
   description = NULL,
+  details = NULL,
+  return_order = NULL,
   checker = to_pascal_case(name),
   checker_args = list(),
   extra_ctor = NULL,
@@ -62,6 +69,8 @@ param_spec <- function(
   checkmate::qassert(name, "S1")
   checkmate::qassert(title, "S1")
   checkmate::qassert(description, c("S1", "0"))
+  checkmate::qassert(details, c("S1", "0"))
+  checkmate::qassert(return_order, c("S+", "0"))
   checkmate::qassert(checker, c("S1", "0"))
   checkmate::qassert(class_tag, c("S1", "0"))
   checkmate::qassert(strict_names, "B1")
@@ -74,12 +83,17 @@ param_spec <- function(
   if (test_fn && is.null(checker)) {
     stop("`test_fn = TRUE` needs a `checker`.")
   }
+  if (!is.null(return_order) && !setequal(return_order, names(fields))) {
+    stop("`return_order` must be a permutation of the field names.")
+  }
   structure(
     list(
       name = name,
       title = title,
       fields = fields,
       description = description,
+      details = details,
+      return_order = return_order,
       checker = checker,
       checker_args = checker_args,
       extra_ctor = extra_ctor,
@@ -203,4 +217,16 @@ load_specs <- function(pkg = ".") {
     ))
   }
   specs[order(names(specs))]
+}
+
+#' The names of a spec's returned list, in order
+#'
+#' @param spec A `devforge_spec`.
+#'
+#' @returns Character vector of field names.
+#'
+#' @keywords internal
+spec_field_names <- function(spec) {
+  checkmate::assertClass(spec, "devforge_spec")
+  spec$return_order %||% names(spec$fields)
 }

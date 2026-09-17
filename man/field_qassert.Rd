@@ -4,10 +4,13 @@
 \alias{field_qassert}
 \title{Derive the qassert pattern for a field}
 \usage{
-field_qassert(field)
+field_qassert(field, for_check = FALSE)
 }
 \arguments{
 \item{field}{A \code{devforge_field}.}
+
+\item{for_check}{Boolean. Return the checker's pattern, which \code{check_as}
+may override, rather than the constructor's. Defaults to \code{FALSE}.}
 }
 \value{
 Character vector of qassert patterns, or \code{NULL} for a \code{"free"}

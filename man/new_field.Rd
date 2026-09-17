@@ -12,6 +12,7 @@ new_field(
   len = 1L,
   choices = NULL,
   letter = NULL,
+  check_as = NULL,
   doc = NULL
 )
 }
@@ -31,6 +32,10 @@ scalar, \code{"+"} for one or more, \code{"*"} for any length.}
 
 \item{letter}{String or \code{NULL}. Overrides the qassert base letter, for the
 rare case where a stricter class is wanted (\code{"R"} instead of \code{"N"}).}
+
+\item{check_as}{Character vector or \code{NULL}. Overrides the pattern used in
+the checker's rule table. For fields the constructor resolves, such as a
+worker count that takes \code{NULL} and comes back as an integer.}
 
 \item{doc}{String or \code{NULL}. Roxygen prose for this field.}
 }

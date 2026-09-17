@@ -1,0 +1,61 @@
+url: https://gregorlueg.github.io/devforge/
+
+template:
+  bootstrap: 5
+  light-switch: true
+  theme: atom-one-light
+  theme-dark: atom-one-dark
+  bslib:
+    primary: "#3C4B6D"
+    border-radius: 0.5rem
+    btn-border-radius: 0.25rem
+
+home:
+  title: "devforge"
+  description: "Development tooling for the bixverse family of R packages"
+
+navbar:
+  structure:
+    left: [intro, reference, news, articles]
+    right: [search, lightswitch, github]
+  components:
+    articles:
+      text: Articles
+      menu:
+        - text: Generating parameter wrappers
+          href: articles/params.html
+    github:
+      icon: fab fa-github
+      href: https://github.com/GregorLueg/devforge
+      aria-label: GitHub
+
+articles:
+  - title: Articles
+    navbar: Articles
+    contents:
+      - params
+
+reference:
+  # Writing a spec
+  - title: Specs
+    desc: The declarative description of a parameter wrapper
+    contents:
+      - param_spec
+      - param_defaults
+      - load_specs
+  # Field types
+  - title: Field types
+    desc: One constructor per kind of parameter
+    contents:
+      - p_int
+      - p_dbl
+      - p_lgl
+      - p_chr
+      - p_choice
+      - p_free
+  # Generation
+  - title: Generation
+    desc: Writing the generated files and keeping them honest
+    contents:
+      - forge_params
+      - params_up_to_date

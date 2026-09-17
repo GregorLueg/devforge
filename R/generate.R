@@ -6,6 +6,19 @@ GENERATED_HEADER <- c(
   ""
 )
 
+#' A section divider padded to the 80 character line width
+#'
+#' @param title String. The section title.
+#'
+#' @returns String. The divider line.
+#'
+#' @keywords internal
+section_header <- function(title) {
+  checkmate::qassert(title, "S1")
+  stem <- paste0("# ", title, " ")
+  paste0(stem, strrep("-", max(1L, 80L - nchar(stem))))
+}
+
 GENERATED_FILES <- c(
   prelude = "R/params-prelude-generated.R",
   params = "R/params-generated.R",
@@ -30,7 +43,7 @@ dedupe_checkers <- function(specs) {
   stems <- purrr::map_chr(with_checker, \(s) s$checker)
   purrr::map(unique(stems), \(stem) {
     group <- with_checker[stems == stem]
-    shapes <- purrr::map(group, \(s) names(s$fields))
+    shapes <- purrr::map(group, spec_field_names)
     if (length(unique(shapes)) > 1L) {
       stop(sprintf(
         "Specs %s share the checker `%s` but declare different fields.",
@@ -41,7 +54,9 @@ dedupe_checkers <- function(specs) {
         stem
       ))
     }
-    group[[1L]]
+    primary <- group[[1L]]
+    primary$covers <- unname(purrr::map_chr(group, \(s) s$name))
+    primary
   })
 }
 
@@ -61,13 +76,13 @@ render_specs <- function(specs) {
     prelude = c(GENERATED_HEADER, emit_prelude()),
     params = c(
       GENERATED_HEADER,
-      "# parameter wrappers ---------------------------------------------------",
+      section_header("parameter wrappers"),
       "",
       unlist(params, use.names = FALSE)
     ),
     checkers = c(
       GENERATED_HEADER,
-      "# parameter checkers ---------------------------------------------------",
+      section_header("parameter checkers"),
       "",
       unlist(checkers, use.names = FALSE)
     )

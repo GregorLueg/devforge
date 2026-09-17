@@ -20,9 +20,13 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Imports: 
     checkmate,
-    purrr
+    purrr,
+    utils
 Suggests:
+    knitr,
+    quarto,
     tinytest
+VignetteBuilder: quarto
 Depends: 
     R (>= 4.2)
 Config/roxygen2/version: 8.1.0

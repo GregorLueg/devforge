@@ -13,10 +13,11 @@
 #' @keywords internal
 spec_qtest_rules <- function(spec) {
   checkmate::assertClass(spec, "devforge_spec")
-  keep <- purrr::map_lgl(spec$fields, \(f) {
-    !identical(f$type, "choice") && !is.null(field_qassert(f))
+  ordered <- spec$fields[spec_field_names(spec)]
+  keep <- purrr::map_lgl(ordered, \(f) {
+    !identical(f$type, "choice") && !is.null(field_qassert(f, for_check = TRUE))
   })
-  purrr::map(spec$fields[keep], field_qassert)
+  purrr::map(ordered[keep], \(f) field_qassert(f, for_check = TRUE))
 }
 
 #' The choice rule table for a spec
@@ -28,8 +29,9 @@ spec_qtest_rules <- function(spec) {
 #' @keywords internal
 spec_choice_rules <- function(spec) {
   checkmate::assertClass(spec, "devforge_spec")
-  keep <- purrr::map_lgl(spec$fields, \(f) identical(f$type, "choice"))
-  purrr::map(spec$fields[keep], \(f) f$choices)
+  ordered <- spec$fields[spec_field_names(spec)]
+  keep <- purrr::map_lgl(ordered, \(f) identical(f$type, "choice"))
+  purrr::map(ordered[keep], \(f) f$choices)
 }
 
 #' Source text for a named list of rules
@@ -90,12 +92,11 @@ emit_checker <- function(spec) {
     c(",", sprintf("hint = %s", deparse_value(spec$hint)))
   }
 
-  shape_args <- sprintf(
-    "x, %s%s",
-    deparse_value(names(spec$fields)),
-    if (spec$strict_names) ", strict = TRUE" else ""
-  )
-  body <- emit_guarded(paste0("check_list_shape(", shape_args, ")"))
+  shape_args <- list("x", emit_char_vector(spec_field_names(spec)))
+  if (spec$strict_names) {
+    shape_args <- c(shape_args, list("strict = TRUE"))
+  }
+  body <- emit_guarded(emit_call("check_list_shape", shape_args))
 
   qtest_rules <- spec_qtest_rules(spec)
   if (length(qtest_rules) > 0L) {
@@ -128,7 +129,7 @@ emit_checker <- function(spec) {
   }
 
   if (!is.null(spec$extra_check)) {
-    body <- c(body, deparse(spec$extra_check), "")
+    body <- c(body, deparse_block(spec$extra_check), "")
   }
   body <- c(body, "return(TRUE)")
 
@@ -155,8 +156,11 @@ emit_checker <- function(spec) {
     "#'",
     wrap_roxygen(
       sprintf(
-        "Checkmate extension for the output of [params_%s()].",
-        spec$name
+        "Checkmate extension for the output of %s.",
+        paste(
+          sprintf("[params_%s()]", spec$covers %||% spec$name),
+          collapse = " and "
+        )
       ),
       prefix = "#' @description "
     ),
@@ -181,20 +185,26 @@ emit_checker <- function(spec) {
     indent(body),
     "}",
     "",
-    sprintf(
-      "%s <- checkmate::makeAssertionFunction(%s)",
-      assert_name,
-      check_name
+    prefix_first(
+      paste0(assert_name, " <- "),
+      emit_call(
+        "checkmate::makeAssertionFunction",
+        list(check_name),
+        budget = 80L - nchar(assert_name) - 4L
+      )
     )
   )
   if (spec$test_fn) {
     out <- c(
       out,
       "",
-      sprintf(
-        "test%sParams <- checkmate::makeTestFunction(%s)",
-        spec$checker,
-        check_name
+      prefix_first(
+        paste0("test", spec$checker, "Params <- "),
+        emit_call(
+          "checkmate::makeTestFunction",
+          list(check_name),
+          budget = 80L - nchar(spec$checker) - 14L
+        )
       )
     )
   }

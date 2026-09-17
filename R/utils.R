@@ -118,3 +118,119 @@ deparse_double <- function(x) {
   src <- paste0(format(x, trim = TRUE, scientific = FALSE), ".0")
   if (length(src) == 1L) src else paste0("c(", paste(src, collapse = ", "), ")")
 }
+
+#' Lay out a character vector as source, one line if it fits
+#'
+#' @description air preserves whatever line breaks it is given inside a call,
+#' so anything that could overflow 80 characters has to be broken here rather
+#' than left to the formatter.
+#'
+#' @param x Character vector.
+#' @param budget Integer. Characters available on the single line. Defaults to
+#' `60L`.
+#'
+#' @returns Character vector of R source lines.
+#'
+#' @keywords internal
+emit_char_vector <- function(x, budget = 60L) {
+  checkmate::qassert(x, "S+")
+  checkmate::qassert(budget, "I1[1,)")
+  one_line <- deparse_value(x)
+  if (nchar(one_line) <= budget) {
+    return(one_line)
+  }
+  c(
+    "c(",
+    indent(paste0(
+      sprintf('"%s"', x),
+      c(rep(",", length(x) - 1L), "")
+    )),
+    ")"
+  )
+}
+
+#' Lay out a call as source, one line if it fits
+#'
+#' @param fn String. The function name.
+#' @param args Character vector or list of character vectors. One entry per
+#' argument.
+#' @param budget Integer. Characters available on the single line. Defaults to
+#' `72L`.
+#'
+#' @returns Character vector of R source lines.
+#'
+#' @keywords internal
+emit_call <- function(fn, args, budget = 72L) {
+  checkmate::qassert(fn, "S1")
+  checkmate::qassert(budget, "I1[1,)")
+  args <- purrr::map(args, \(a) if (is.character(a)) a else as.character(a))
+  flat <- purrr::map_chr(args, \(a) paste(a, collapse = " "))
+  one_line <- sprintf("%s(%s)", fn, paste(flat, collapse = ", "))
+  fits <- nchar(one_line) <= budget &&
+    all(purrr::map_int(args, length) == 1L)
+  if (fits) {
+    return(one_line)
+  }
+  body <- purrr::imap(args, \(a, i) {
+    if (i < length(args)) {
+      c(utils::head(a, -1L), paste0(utils::tail(a, 1L), ","))
+    } else {
+      a
+    }
+  })
+  c(paste0(fn, "("), indent(unlist(body, use.names = FALSE)), ")")
+}
+
+#' Put a prefix in front of the first line only
+#'
+#' @param prefix String. What goes in front.
+#' @param lines Character vector. The source lines.
+#'
+#' @returns Character vector with `prefix` on the first line.
+#'
+#' @keywords internal
+prefix_first <- function(prefix, lines) {
+  checkmate::qassert(prefix, "S1")
+  checkmate::qassert(lines, "S+")
+  lines[[1L]] <- paste0(prefix, lines[[1L]])
+  lines
+}
+
+#' Deparse a quoted expression, unwrapping an outer brace block
+#'
+#' @description `quote({ a; b })` deparses with its braces and an extra level
+#' of indent. Statements are emitted at the nesting level they land in, so the
+#' braces come off.
+#'
+#' @param expr A language object, or `NULL`.
+#'
+#' @returns Character vector of R source lines. Empty for `NULL`.
+#'
+#' @keywords internal
+deparse_block <- function(expr) {
+  if (is.null(expr)) {
+    return(character(0))
+  }
+  lines <- if (is.call(expr) && identical(expr[[1L]], as.name("{"))) {
+    unlist(lapply(as.list(expr)[-1L], deparse), use.names = FALSE)
+  } else {
+    deparse(expr)
+  }
+  halve_indent(lines)
+}
+
+#' Halve the indentation of deparsed source
+#'
+#' @description `deparse()` indents nested blocks by four spaces and offers no
+#' option to change that. The house style is two.
+#'
+#' @param lines Character vector of R source lines.
+#'
+#' @returns Character vector with every leading indent halved.
+#'
+#' @keywords internal
+halve_indent <- function(lines) {
+  checkmate::qassert(lines, "S*")
+  leading <- nchar(sub("^( *).*$", "\\1", lines))
+  paste0(strrep(" ", leading %/% 2L), trimws(lines, which = "left"))
+}

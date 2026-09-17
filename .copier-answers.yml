@@ -8,7 +8,7 @@ has_gpu: false
 has_rust: false
 linux_runner: ubuntu-latest
 pkg_name: devforge
-quarto: false
+quarto: true
 rebuild_from_source: ''
 windows: true
 

@@ -4,7 +4,14 @@
 \alias{p_int}
 \title{Integer field}
 \usage{
-p_int(default, range = NULL, null_ok = FALSE, len = 1L, doc = NULL)
+p_int(
+  default,
+  range = NULL,
+  null_ok = FALSE,
+  len = 1L,
+  check_as = NULL,
+  doc = NULL
+)
 }
 \arguments{
 \item{default}{Integer or \code{NULL}. The default value.}
@@ -15,6 +22,9 @@ p_int(default, range = NULL, null_ok = FALSE, len = 1L, doc = NULL)
 
 \item{len}{Integer or string. \code{1L} for a scalar, \code{"+"} for one or more.
 Defaults to \code{1L}.}
+
+\item{check_as}{Character vector or \code{NULL}. Overrides the checker's pattern,
+for a field the constructor resolves before returning it.}
 
 \item{doc}{String or \code{NULL}. Roxygen prose for this field.}
 }

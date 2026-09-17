@@ -9,6 +9,8 @@ param_spec(
   title,
   fields,
   description = NULL,
+  details = NULL,
+  return_order = NULL,
   checker = to_pascal_case(name),
   checker_args = list(),
   extra_ctor = NULL,
@@ -32,6 +34,13 @@ formals and of the returned list.}
 
 \item{description}{String or \code{NULL}. Roxygen \verb{@description} prose. Defaults
 to \code{NULL}.}
+
+\item{details}{String or \code{NULL}. Roxygen \verb{@details} prose, emitted verbatim
+so it can carry its own \verb{\\itemize\{\}}. Defaults to \code{NULL}.}
+
+\item{return_order}{Character vector or \code{NULL}. The order of the returned
+list, when it differs from the order of the formals. Must be a permutation
+of \code{names(fields)}. Defaults to \code{NULL}, meaning the order of the formals.}
 
 \item{checker}{String or \code{NULL}. PascalCase stem for the checkmate
 extension, giving \verb{check<stem>Params()} and \verb{assert<stem>Params()}. Two
