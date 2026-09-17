@@ -166,6 +166,17 @@ cat(devforge:::emit_checker(spec), sep = "\n")
 #>   return(TRUE)
 #> }
 #> 
+#> #' Assert kernel parameters
+#> #'
+#> #' @inheritParams checkKernelParams
+#> #' @param .var.name Name of the checked object to print in assertions.
+#> #' @param add Collection to store assertion messages. See
+#> #' [checkmate::makeAssertCollection()].
+#> #'
+#> #' @returns Invisibly returns the checked object if the assertion is
+#> #' successful.
+#> #'
+#> #' @keywords internal
 #> assertKernelParams <- checkmate::makeAssertionFunction(checkKernelParams)
 ```
 

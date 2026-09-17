@@ -5,11 +5,13 @@
 <url><loc>https://gregorlueg.github.io/devforge/articles/params.html</loc></url>
 <url><loc>https://gregorlueg.github.io/devforge/authors.html</loc></url>
 <url><loc>https://gregorlueg.github.io/devforge/index.html</loc></url>
+<url><loc>https://gregorlueg.github.io/devforge/news/index.html</loc></url>
 <url><loc>https://gregorlueg.github.io/devforge/reference/assert_fields.html</loc></url>
 <url><loc>https://gregorlueg.github.io/devforge/reference/dedupe_checkers.html</loc></url>
 <url><loc>https://gregorlueg.github.io/devforge/reference/deparse_block.html</loc></url>
 <url><loc>https://gregorlueg.github.io/devforge/reference/deparse_double.html</loc></url>
 <url><loc>https://gregorlueg.github.io/devforge/reference/deparse_value.html</loc></url>
+<url><loc>https://gregorlueg.github.io/devforge/reference/deparse_within.html</loc></url>
 <url><loc>https://gregorlueg.github.io/devforge/reference/devforge-package.html</loc></url>
 <url><loc>https://gregorlueg.github.io/devforge/reference/emit_call.html</loc></url>
 <url><loc>https://gregorlueg.github.io/devforge/reference/emit_char_vector.html</loc></url>
@@ -49,6 +51,7 @@
 <url><loc>https://gregorlueg.github.io/devforge/reference/spec_field_names.html</loc></url>
 <url><loc>https://gregorlueg.github.io/devforge/reference/spec_qtest_rules.html</loc></url>
 <url><loc>https://gregorlueg.github.io/devforge/reference/to_pascal_case.html</loc></url>
+<url><loc>https://gregorlueg.github.io/devforge/reference/warn_line_width.html</loc></url>
 <url><loc>https://gregorlueg.github.io/devforge/reference/wrap_roxygen.html</loc></url>
 </urlset>
 

@@ -7,7 +7,7 @@ come off.
 ## Usage
 
 ``` r
-deparse_block(expr)
+deparse_block(expr, budget = 78L)
 ```
 
 ## Arguments
@@ -15,6 +15,12 @@ deparse_block(expr)
 - expr:
 
   A language object, or `NULL`.
+
+- budget:
+
+  Integer. Characters available per line once the block has landed at
+  its nesting level. Defaults to `78L`, the 80 character width less the
+  one level of indent the constructor and checker bodies put it at.
 
 ## Value
 
