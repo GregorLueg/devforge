@@ -1,0 +1,33 @@
+Package: devforge
+Title: Development tooling for the bixverse family of R packages
+Version: 0.0.1
+Authors@R: 
+    person(
+        given = "Gregor", 
+        family = "Lueg", 
+        email = "gregorlueg@me.com", 
+        role = c("aut", "cre")
+    )
+Description: 
+    Dev-time tooling, not a runtime dependency. Generates the parameter wrapper
+    constructors and their paired checkmate extensions from a declarative spec,
+    and lints the things the house style asks for but cannot enforce: roxygen
+    that has drifted away from the formals it documents, function inputs that
+    never reach a checkmate assertion, and rextendr bindings without an R
+    wrapper.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Imports: 
+    checkmate,
+    purrr,
+    utils
+Suggests:
+    knitr,
+    quarto,
+    tinytest
+VignetteBuilder: quarto
+Depends: 
+    R (>= 4.2)
+Config/roxygen2/version: 8.1.0
+URL: https://github.com/GregorLueg/devforge

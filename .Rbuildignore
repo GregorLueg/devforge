@@ -1,0 +1,15 @@
+^LICENSE\.md$
+^Meta$
+^[.]?air[.]toml$
+^\.Rproj\.user$
+^\.claude$
+^\.github$
+^\.vscode$
+^_pkgdown\.yml$
+^devforge\.Rproj$
+^doc$
+^docs$
+^pkgdown$
+^renovate\.json$
+^vignettes/*_files$
+^vignettes/\.quarto$

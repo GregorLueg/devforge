@@ -1,0 +1,15 @@
+# R
+.Rproj.user
+.Rhistory
+
+# Apple
+.DS_Store
+
+# other
+workbench.R
+scratch.R
+docs
+pkgdown/favicon/*
+
+# Claude
+.claude/worktrees/
