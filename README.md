@@ -1,8 +1,10 @@
-# devforge
+# devforge <img src="man/figures/logo.png" align="right" height="138" alt="devforge logo" />
 
-<!-- badges: start -->
-[![R-CMD-check](https://github.com/GregorLueg/devforge/actions/workflows/R-cmd-check.yml/badge.svg)](https://github.com/GregorLueg/devforge/actions/workflows/R-cmd-check.yml)
-<!-- badges: end -->
+[![r_package](https://img.shields.io/github/r-package/v/GregorLueg/devforge?label=R_package&color=orange)](https://github.com/GregorLueg/devforge/blob/main/DESCRIPTION)
+[![devforge status badge](https://gregorlueg.r-universe.dev/devforge/badges/version)](https://gregorlueg.r-universe.dev/devforge)
+[![CI](https://github.com/GregorLueg/devforge/actions/workflows/R-cmd-check.yml/badge.svg)](https://github.com/GregorLueg/devforge/actions/workflows/R-cmd-check.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![pkgdown](https://img.shields.io/badge/pkgdown-website-1b5e9f?logo=github)](https://gregorlueg.github.io/devforge/)
 
 Development tooling for the bixverse family of R packages. Dev-time only: it is
 never an `Imports:` of anything it generates.
