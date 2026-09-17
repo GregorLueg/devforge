@@ -6,21 +6,17 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![pkgdown](https://img.shields.io/badge/pkgdown-website-1b5e9f?logo=github)](https://gregorlueg.github.io/devforge/)
 
-Development tooling for the bixverse family of R packages. Dev-time only: it is
-never an `Imports:` of anything it generates.
+Development tooling for the bixverse family of R packages + others.  Dev-time 
+only: it is never an `Imports:` of anything it generates.
 
 ## What it does
+
+**First feature:**
 
 Takes a declarative spec and writes both halves of the parameter wrapper
 pattern: the `params_xxx()` constructor and its paired `checkXxxParams()` /
 `assertXxxParams()` checkmate extension, with full roxygen. The generated files
 are committed and are plain `checkmate` code.
-
-Across the five packages that pattern runs to 103 constructors, 96 check/assert
-pairs and about 13,700 lines, most of it a default, a qassert string and a
-roxygen line written by hand. Writing it a hundred times is how you end up with
-two spellings of "integer or `NULL`", four different checker naming conventions,
-and roxygen that quotes defaults the constructor stopped using.
 
 ```r
 spec_kernel <- param_spec(
@@ -44,9 +40,12 @@ See `vignette("params")` for the escape hatches and the migration recipe.
 
 ## Installation
 
+Simplest is to install from R-universe:
+
 ```r
 install.packages(
   "devforge",
   repos = c("https://gregorlueg.r-universe.dev", "https://cloud.r-project.org")
 )
 ```
+
