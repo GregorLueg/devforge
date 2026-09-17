@@ -34,7 +34,9 @@ expect_equal(length(paths), 3L)
 
 # the generated files load and behave
 env <- new.env(parent = globalenv())
-for (path in paths) sys.source(path, envir = env, keep.source = FALSE)
+for (path in paths) {
+  sys.source(path, envir = env, keep.source = FALSE)
+}
 expect_equal(env$params_alpha(), list(k = 15L, method = "kmknn"))
 expect_equal(env$params_beta_defaults(), list(tol = 1))
 expect_true(isTRUE(env$checkAlphaParams(env$params_alpha())))

@@ -106,6 +106,41 @@ run_air <- function(paths) {
   TRUE
 }
 
+#' Warn about generated lines that exceed the line width
+#'
+#' @description air will not reflow what a consumer's `persistent-line-breaks`
+#' setting tells it to leave alone, and an unbreakable literal inside an
+#' `extra_ctor` block cannot be reflowed at all. Say so rather than quietly
+#' shipping a 95 character line into a package that formats at 80.
+#'
+#' @param paths Character vector of file paths.
+#' @param width Integer. The line width. Defaults to `80L`.
+#'
+#' @returns `TRUE` if every line fits, `FALSE` otherwise.
+#'
+#' @keywords internal
+warn_line_width <- function(paths, width = 80L) {
+  checkmate::assertFileExists(paths)
+  checkmate::qassert(width, "I1[1,)")
+  over <- purrr::map(paths, \(path) {
+    idx <- which(nchar(readLines(path, warn = FALSE)) > width)
+    sprintf("  %s:%d", path, idx)
+  })
+  over <- unlist(over, use.names = FALSE)
+  if (length(over) == 0L) {
+    return(TRUE)
+  }
+  warning(
+    sprintf(
+      "Generated lines over %d characters:\n%s\nShorten them in the spec.",
+      width,
+      paste(over, collapse = "\n")
+    ),
+    call. = FALSE
+  )
+  FALSE
+}
+
 #' Generate the parameter wrappers and their checkmate extensions
 #'
 #' @description Reads every spec under `inst/params/`, writes the three
@@ -126,6 +161,7 @@ forge_params <- function(pkg = ".", .verbose = TRUE) {
   paths <- file.path(pkg, GENERATED_FILES[names(rendered)])
   purrr::walk2(rendered, paths, \(lines, path) writeLines(lines, path))
   run_air(paths)
+  warn_line_width(paths)
   if (.verbose) {
     message(sprintf(
       "Generated %d spec(s) into:\n%s",

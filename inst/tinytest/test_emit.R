@@ -123,3 +123,39 @@ expect_equal(length(devforge:::dedupe_checkers(list(spec, other))), 1L)
 mismatch <- other
 mismatch$fields <- spec$fields[1:2]
 expect_error(devforge:::dedupe_checkers(list(spec, mismatch)))
+
+# regressions --------------------------------------------------------------------
+
+# a hint used to put the argument separator on a line of its own
+expect_false(any(grepl("^ *,$", checker)))
+expect_true(any(grepl('label = "demo params",', checker, fixed = TRUE)))
+
+# the assert and test siblings are documented, not bare
+expect_true(any(grepl("#' Assert demo params", checker, fixed = TRUE)))
+expect_true(any(grepl(
+  "#' @inheritParams checkDemoParams",
+  checker,
+  fixed = TRUE
+)))
+
+tested <- spec
+tested$test_fn <- TRUE
+expect_true(any(grepl(
+  "#' Test demo params",
+  devforge:::emit_checker(tested),
+  fixed = TRUE
+)))
+
+# deparse() treats width.cutoff as a hint, so a wide extra block was emitted
+# verbatim at 95 characters
+wide <- spec
+wide$extra_ctor <- quote({
+  checkmate::assertTRUE(
+    maxit > alpha,
+    .var.name = "maxit has to exceed alpha, which is a long name"
+  )
+})
+expect_true(all(nchar(devforge:::emit_ctor(wide)) <= 80L))
+
+# and no line keeps the trailing space a tighter cutoff leaves behind
+expect_false(any(grepl(" $", devforge:::emit_ctor(wide))))

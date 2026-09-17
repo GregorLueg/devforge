@@ -6,6 +6,8 @@
 \alias{devforge-package}
 \title{devforge: Development tooling for the bixverse family of R packages}
 \description{
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
 Dev-time tooling, not a runtime dependency. Generates the parameter wrapper constructors and their paired checkmate extensions from a declarative spec, and lints the things the house style asks for but cannot enforce: roxygen that has drifted away from the formals it documents, function inputs that never reach a checkmate assertion, and rextendr bindings without an R wrapper.
 }
 \seealso{
