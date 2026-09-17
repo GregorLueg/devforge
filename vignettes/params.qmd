@@ -16,20 +16,15 @@ author:
 
 # The problem
 
-Every package in the family carries the same pattern. A `params_xxx()`
-constructor that returns a named list, a `checkXxxParams()` in a
-`checkmate_extensions.R` file, and an `assertXxxParams()` built from it with
-`checkmate::makeAssertionFunction()`. Across the five packages that is 103
-constructors, 96 check/assert pairs and about 13,700 lines, of which maybe four
-fifths is a default, a qassert string and a roxygen line repeated by hand.
+You like to reduce [parameter clutter for your functions](https://design.tidyverse.org/argument-clutter.html)
+according to tidy design principles?  I do. A `params_xxx()` constructor that 
+returns a named list, a  `checkXxxParams()` in a `checkmate_extensions.R` file, 
+and an `assertXxxParams()` built from it with 
+`checkmate::makeAssertionFunction()`. However, this can be a pain in large 
+packages with lots and lots of these parameter wrappers.
 
-Writing the same thing a hundred times has consequences. There are two spellings
-of "integer or `NULL`" in circulation, sometimes four lines apart in the same
-function. Checker names drifted into `checkKmeansParams`, `checkKMeansGpuParams`,
-`checkScrubletGpu` and `assertNode2VecParam`. Every checker uses `must.include`,
-so a typo'd element passes everywhere. And the roxygen for a params list gets
-written two or three times, once on the constructor and again on everything that
-consumes it, where it quietly goes stale.
+Writing the same thing a hundred times has consequences: spelling mistakes,
+inconsistent naming, documentation drift and staleness, etc. You name it.
 
 `devforge` takes a spec and writes both halves. It is a dev-time tool: the
 generated files are committed, they are plain `checkmate` code, and no package
@@ -72,10 +67,11 @@ spec <- param_spec(
 )
 ```
 
-That is the real `genewalkR::params_kernel()` spec. Note what is *not* in it:
-the qassert strings, the type annotations in the roxygen, the documented
-defaults, the `must.include` name list, the rule tables, and the assert sibling.
-All of those are derived, which is exactly why they cannot drift.
+That is the real `genewalkR::params_kernel()` spec, see [here](https://gregorlueg.github.io/genewalkR/reference/params_kernel.html). 
+Note what is *not* in it: the qassert strings, the type annotations in the 
+roxygen, the documented defaults, the `must.include` name list, the rule tables, 
+and the assert sibling. All of those are derived, which is exactly why they 
+cannot drift.
 
 The two `extra_*` slots are the escape hatch. Cross-field rules like `a >= 2`
 cannot be expressed as a per-field pattern, so they go in verbatim. The
@@ -154,23 +150,6 @@ devforge::params_up_to_date(".")
 `TRUE` when everything matches, otherwise the paths that are stale. That catches
 both a hand-edit of a generated file and a spec change that was never
 regenerated.
-
-# Migrating a package
-
-The migration is only worth doing if the generated code behaves identically, so
-prove it rather than assume it. The `genewalkR` pilot kept the pre-migration
-code as `inst/testdata/params-old.R` with every name suffixed `_old`, then
-compared the two side by side: default construction with `identical()`, every
-field perturbed to eleven different values, every field dropped, an unknown
-field added, non-list input, and the same battery of bad constructor calls.
-Verdicts had to match exactly. Message text was allowed to differ.
-
-64 assertions, all green, and the harness gets deleted once that has been signed
-off. Two things it caught that a quick eyeball would not: a constructor whose
-returned list is in a different order from its formals, and a field that accepts
-`NULL` at the door but is never `NULL` in the returned list, so the checker's
-pattern has to be stricter than the constructor's. Both now have a slot in the
-spec, `return_order` and `check_as`.
 
 # What is next
 
