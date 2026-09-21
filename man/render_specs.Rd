@@ -11,7 +11,7 @@ render_specs(specs)
 }
 \value{
 A named list of character vectors, one per entry of
-\code{GENERATED_FILES}.
+\code{GENERATED_FILES}, without the generated header.
 }
 \description{
 Render specs into the source of the generated files
