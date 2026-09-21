@@ -15,6 +15,8 @@
 #' to `NULL`.
 #' @param details String or `NULL`. Roxygen `@details` prose, emitted verbatim
 #' so it can carry its own `\itemize{}`. Defaults to `NULL`.
+#' @param references String or `NULL`. Roxygen `@references` prose. Defaults
+#' to `NULL`.
 #' @param return_order Character vector or `NULL`. The order of the returned
 #' list, when it differs from the order of the formals. Must be a permutation
 #' of `names(fields)`. Defaults to `NULL`, meaning the order of the formals.
@@ -54,6 +56,7 @@ param_spec <- function(
   fields,
   description = NULL,
   details = NULL,
+  references = NULL,
   return_order = NULL,
   checker = to_pascal_case(name),
   checker_args = list(),
@@ -70,6 +73,7 @@ param_spec <- function(
   checkmate::qassert(title, "S1")
   checkmate::qassert(description, c("S1", "0"))
   checkmate::qassert(details, c("S1", "0"))
+  checkmate::qassert(references, c("S1", "0"))
   checkmate::qassert(return_order, c("S+", "0"))
   checkmate::qassert(checker, c("S1", "0"))
   checkmate::qassert(class_tag, c("S1", "0"))
@@ -93,6 +97,7 @@ param_spec <- function(
       fields = fields,
       description = description,
       details = details,
+      references = references,
       return_order = return_order,
       checker = checker,
       checker_args = checker_args,
