@@ -10,7 +10,8 @@ FIELD_TYPE_PROSE <- c(
   lgl = "Boolean",
   chr = "String",
   choice = "String",
-  free = "Any"
+  free = "Any",
+  merge = "List"
 )
 
 #' The documented default of a field
@@ -89,11 +90,20 @@ field_doc_prose <- function(field) {
     type <- paste(type, "or `NULL`")
   }
   parts <- paste0(type, ". ", field$doc)
+  if (identical(field$type, "merge") && is.character(field$from)) {
+    parts <- paste0(
+      parts,
+      sprintf(" See [params_%s()] for the available elements.", field$from)
+    )
+  }
   if (identical(field$type, "choice")) {
     parts <- paste0(
       parts,
       sprintf(" One of %s.", paste0("`", deparse_value(field$choices), "`"))
     )
+  }
+  if (field$required) {
+    return(paste0(parts, " Required."))
   }
   default_src <- if (identical(field$type, "dbl")) {
     deparse_double(field_effective_default(field))
@@ -101,6 +111,122 @@ field_doc_prose <- function(field) {
     deparse_value(field_effective_default(field))
   }
   paste0(parts, sprintf(" Defaults to `%s`.", default_src))
+}
+
+#' The `\itemize{}` entry for a merged field
+#'
+#' @param field A `devforge_field` of type `"merge"`.
+#' @param name String. The field name.
+#'
+#' @returns String. One sentence run, unwrapped.
+#'
+#' @keywords internal
+merge_item_prose <- function(field, name) {
+  checkmate::assertClass(field, "devforge_field")
+  checkmate::qassert(name, "S1")
+  base <- if (is.character(field$from)) {
+    sprintf("[params_%s()]", field$from)
+  } else {
+    "the base list"
+  }
+  sprintf(
+    "The elements of %s, overridden by `%s`, spliced in at this position.",
+    base,
+    name
+  )
+}
+
+#' The statement that merges a field into its base
+#'
+#' @description `name <- utils::modifyList(base, name, keep.null = TRUE)`, with
+#' the overrides layered between the base and the caller's list when there are
+#' any.
+#'
+#' @param field A `devforge_field` of type `"merge"`.
+#' @param name String. The field name.
+#'
+#' @returns Character vector of R source lines.
+#'
+#' @keywords internal
+emit_merge <- function(field, name) {
+  checkmate::assertClass(field, "devforge_field")
+  checkmate::qassert(name, "S1")
+  base <- if (is.character(field$from)) {
+    call(paste0("params_", field$from))
+  } else {
+    field$from
+  }
+  user <- as.name(name)
+  if (!is.null(field$overrides)) {
+    overrides <- if (is.language(field$overrides)) {
+      field$overrides
+    } else {
+      str2lang(deparse_value(field$overrides))
+    }
+    user <- as.call(list(
+      quote(utils::modifyList),
+      overrides,
+      user,
+      keep.null = TRUE
+    ))
+  }
+  deparse_block(call(
+    "<-",
+    as.name(name),
+    as.call(list(quote(utils::modifyList), base, user, keep.null = TRUE))
+  ))
+}
+
+#' The returned list of a generated constructor
+#'
+#' @description A plain `list()` when nothing is merged. Otherwise the plain
+#' fields are grouped into `list()` segments and joined with the merged fields
+#' through `c()`, which keeps the declared order.
+#'
+#' @param spec A `devforge_spec`.
+#'
+#' @returns Character vector of R source lines.
+#'
+#' @keywords internal
+emit_return_list <- function(spec) {
+  checkmate::assertClass(spec, "devforge_spec")
+  ret_names <- spec_field_names(spec)
+  values <- if (spec$defaults_only) {
+    purrr::map_chr(spec$fields[ret_names], field_value_src)
+  } else {
+    ret_names
+  }
+  as_list <- function(idx) {
+    c(
+      "list(",
+      indent(paste0(
+        ret_names[idx],
+        " = ",
+        values[idx],
+        c(rep(",", length(idx) - 1L), "")
+      )),
+      ")"
+    )
+  }
+  is_merge <- purrr::map_lgl(
+    spec$fields[ret_names],
+    \(f) identical(f$type, "merge")
+  )
+  if (!any(is_merge)) {
+    return(as_list(seq_along(ret_names)))
+  }
+  runs <- cumsum(c(TRUE, diff(is_merge) != 0L | is_merge[-1L]))
+  segments <- purrr::map(unique(runs), \(r) {
+    idx <- which(runs == r)
+    if (is_merge[idx[[1L]]]) ret_names[idx] else as_list(idx)
+  })
+  segments <- purrr::imap(segments, \(seg, i) {
+    if (i < length(segments)) {
+      seg[length(seg)] <- paste0(seg[length(seg)], ",")
+    }
+    seg
+  })
+  c("c(", indent(unlist(segments, use.names = FALSE)), ")")
 }
 
 #' The `\itemize{}` block describing a spec's returned list
@@ -114,8 +240,13 @@ roxygen_itemize <- function(spec) {
   checkmate::assertClass(spec, "devforge_spec")
   ordered <- spec$fields[spec_field_names(spec)]
   items <- purrr::imap(ordered, \(field, name) {
+    prose <- if (identical(field$type, "merge")) {
+      merge_item_prose(field, name)
+    } else {
+      paste0(name, " - ", field_doc_prose(field))
+    }
     wrap_roxygen(
-      paste0(name, " - ", field_doc_prose(field)),
+      prose,
       prefix = "#'  \\item ",
       cont = "#'  "
     )
@@ -145,7 +276,12 @@ emit_ctor_roxygen <- function(spec) {
       lines,
       "#'",
       "#' @details",
-      paste0("#' ", strsplit(spec$details, "\n", fixed = TRUE)[[1L]])
+      unlist(
+        purrr::map(strsplit(spec$details, "\n", fixed = TRUE)[[1L]], \(line) {
+          if (nzchar(line)) wrap_roxygen(line, prefix = "#' ") else "#'"
+        }),
+        use.names = FALSE
+      )
     )
   }
   if (!spec$defaults_only) {
@@ -222,21 +358,7 @@ emit_ctor <- function(spec) {
   checkmate::assertClass(spec, "devforge_spec")
   fn_name <- paste0("params_", spec$name)
   names_vec <- names(spec$fields)
-  ret_names <- spec_field_names(spec)
-  body_list <- c(
-    "list(",
-    indent(paste0(
-      ret_names,
-      " = ",
-      if (spec$defaults_only) {
-        purrr::map_chr(spec$fields[ret_names], field_value_src)
-      } else {
-        ret_names
-      },
-      c(rep(",", length(ret_names) - 1L), "")
-    )),
-    ")"
-  )
+  body_list <- emit_return_list(spec)
   if (!is.null(spec$class_tag)) {
     body_list <- c(
       paste0("res <- ", body_list[[1L]]),
@@ -262,6 +384,16 @@ emit_ctor <- function(spec) {
   } else {
     character(0)
   }
+  merges <- purrr::keep(spec$fields, \(f) identical(f$type, "merge"))
+  merge_lines <- if (length(merges) > 0L) {
+    c(
+      "",
+      "# Merge",
+      unlist(purrr::imap(merges, emit_merge), use.names = FALSE)
+    )
+  } else {
+    character(0)
+  }
   extra <- if (!is.null(spec$extra_ctor)) {
     c("", deparse_block(spec$extra_ctor))
   } else {
@@ -269,8 +401,9 @@ emit_ctor <- function(spec) {
   }
   formals_src <- paste0(
     names_vec,
-    " = ",
-    purrr::map_chr(spec$fields, field_formal_default),
+    purrr::map_chr(spec$fields, \(f) {
+      if (f$required) "" else paste0(" = ", field_formal_default(f))
+    }),
     c(rep(",", length(names_vec) - 1L), "")
   )
   c(
@@ -282,6 +415,7 @@ emit_ctor <- function(spec) {
       resolve,
       "# Checks",
       emit_ctor_checks(spec),
+      merge_lines,
       extra,
       "",
       "# Return",

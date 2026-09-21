@@ -7,7 +7,8 @@
 p_lgl(default, null_ok = FALSE, doc = NULL)
 }
 \arguments{
-\item{default}{Boolean or \code{NULL}. The default value.}
+\item{default}{Boolean or \code{NULL}. The default value. Leave it out for a
+formal the caller must supply.}
 
 \item{null_ok}{Boolean. Whether \code{NULL} is permitted. Defaults to \code{FALSE}.}
 

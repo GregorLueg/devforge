@@ -4,10 +4,13 @@
 \alias{spec_choice_rules}
 \title{The choice rule table for a spec}
 \usage{
-spec_choice_rules(spec)
+spec_choice_rules(spec, specs = list())
 }
 \arguments{
 \item{spec}{A \code{devforge_spec}.}
+
+\item{specs}{Named list of \code{devforge_spec} objects that merged fields may
+refer to. Defaults to an empty list.}
 }
 \value{
 Named list mapping field name to allowed values. Possibly empty.

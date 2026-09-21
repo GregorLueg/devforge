@@ -1,19 +1,62 @@
 # checker emission -------------------------------------------------------------
 
+#' The fields a spec's checker validates, merged fields expanded
+#'
+#' @description A merged field that names another spec is replaced by that
+#' spec's own checker fields, recursively. A merged field with a language
+#' `from` contributes nothing. When a name turns up twice the first one wins,
+#' matching what `$` finds on the list that `c()` builds.
+#'
+#' @param spec A `devforge_spec`.
+#' @param specs Named list of `devforge_spec` objects that merged fields may
+#' refer to. Defaults to an empty list.
+#'
+#' @returns Named list of `devforge_field` objects in return order.
+#'
+#' @keywords internal
+checker_fields <- function(spec, specs = list()) {
+  checkmate::assertClass(spec, "devforge_spec")
+  checkmate::assertList(specs, types = "devforge_spec")
+  out <- list()
+  for (name in spec_field_names(spec)) {
+    field <- spec$fields[[name]]
+    if (!identical(field$type, "merge")) {
+      if (!name %in% names(out)) {
+        out[[name]] <- field
+      }
+      next
+    }
+    if (!is.character(field$from)) {
+      next
+    }
+    base <- specs[[field$from]]
+    if (is.null(base)) {
+      stop(sprintf(
+        "Field `%s` of spec `%s` merges `%s`, which is not among the specs.",
+        name,
+        spec$name,
+        field$from
+      ))
+    }
+    inner <- checker_fields(base, specs)
+    out <- c(out, inner[setdiff(names(inner), names(out))])
+  }
+  out
+}
+
 #' The qtest rule table for a spec
 #'
 #' @description Choice fields are left out: `apply_choice_rules()` already
 #' implies a string scalar, so a qtest entry would be redundant. Free fields
 #' carry no pattern at all.
 #'
-#' @param spec A `devforge_spec`.
+#' @inheritParams checker_fields
 #'
 #' @returns Named list mapping field name to qassert pattern. Possibly empty.
 #'
 #' @keywords internal
-spec_qtest_rules <- function(spec) {
-  checkmate::assertClass(spec, "devforge_spec")
-  ordered <- spec$fields[spec_field_names(spec)]
+spec_qtest_rules <- function(spec, specs = list()) {
+  ordered <- checker_fields(spec, specs)
   keep <- purrr::map_lgl(ordered, \(f) {
     !identical(f$type, "choice") && !is.null(field_qassert(f, for_check = TRUE))
   })
@@ -22,14 +65,13 @@ spec_qtest_rules <- function(spec) {
 
 #' The choice rule table for a spec
 #'
-#' @param spec A `devforge_spec`.
+#' @inheritParams checker_fields
 #'
 #' @returns Named list mapping field name to allowed values. Possibly empty.
 #'
 #' @keywords internal
-spec_choice_rules <- function(spec) {
-  checkmate::assertClass(spec, "devforge_spec")
-  ordered <- spec$fields[spec_field_names(spec)]
+spec_choice_rules <- function(spec, specs = list()) {
+  ordered <- checker_fields(spec, specs)
   keep <- purrr::map_lgl(ordered, \(f) identical(f$type, "choice"))
   purrr::map(ordered[keep], \(f) f$choices)
 }
@@ -73,13 +115,13 @@ emit_guarded <- function(call_lines) {
 
 #' A generated `check*Params()` and its assertion sibling
 #'
-#' @param spec A `devforge_spec`.
+#' @inheritParams checker_fields
 #'
 #' @returns Character vector of R source lines, or an empty vector when the
 #' spec declares no checker.
 #'
 #' @keywords internal
-emit_checker <- function(spec) {
+emit_checker <- function(spec, specs = list()) {
   checkmate::assertClass(spec, "devforge_spec")
   if (is.null(spec$checker)) {
     return(character(0))
@@ -87,20 +129,23 @@ emit_checker <- function(spec) {
   check_name <- paste0("check", spec$checker, "Params")
   assert_name <- paste0("assert", spec$checker, "Params")
   # The comma belongs on the end of the label line, not on one of its own.
-  label_arg <- sprintf("label = %s", deparse_value(spec$label))
+  label_arg <- prefix_first("label = ", emit_string(spec$label))
   hint_arg <- character(0)
   if (!is.null(spec$hint)) {
-    label_arg <- paste0(label_arg, ",")
-    hint_arg <- sprintf("hint = %s", deparse_value(spec$hint))
+    label_arg[length(label_arg)] <- paste0(label_arg[length(label_arg)], ",")
+    hint_arg <- prefix_first("hint = ", emit_string(spec$hint))
   }
 
-  shape_args <- list("x", emit_char_vector(spec_field_names(spec)))
+  shape_args <- list(
+    "x",
+    emit_char_vector(names(checker_fields(spec, specs)))
+  )
   if (spec$strict_names) {
     shape_args <- c(shape_args, list("strict = TRUE"))
   }
   body <- emit_guarded(emit_call("check_list_shape", shape_args))
 
-  qtest_rules <- spec_qtest_rules(spec)
+  qtest_rules <- spec_qtest_rules(spec, specs)
   if (length(qtest_rules) > 0L) {
     body <- c(
       body,
@@ -115,7 +160,7 @@ emit_checker <- function(spec) {
     )
   }
 
-  choice_rules <- spec_choice_rules(spec)
+  choice_rules <- spec_choice_rules(spec, specs)
   if (length(choice_rules) > 0L) {
     body <- c(
       body,

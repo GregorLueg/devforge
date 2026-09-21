@@ -71,7 +71,10 @@ dedupe_checkers <- function(specs) {
 render_specs <- function(specs) {
   checkmate::assertList(specs, types = "devforge_spec", min.len = 1L)
   params <- purrr::map(specs, \(s) c(emit_ctor(s), ""))
-  checkers <- purrr::map(dedupe_checkers(specs), \(s) c(emit_checker(s), ""))
+  checkers <- purrr::map(
+    dedupe_checkers(specs),
+    \(s) c(emit_checker(s, specs), "")
+  )
   list(
     prelude = emit_prelude(),
     params = c(

@@ -13,11 +13,15 @@ new_field(
   choices = NULL,
   letter = NULL,
   check_as = NULL,
+  from = NULL,
+  overrides = NULL,
+  required = FALSE,
   doc = NULL
 )
 }
 \arguments{
-\item{type}{String. One of \code{c("int", "dbl", "lgl", "chr", "choice", "free")}.}
+\item{type}{String. One of
+\code{c("int", "dbl", "lgl", "chr", "choice", "free", "merge")}.}
 
 \item{default}{Any. The default value for the formal.}
 
@@ -36,6 +40,15 @@ rare case where a stricter class is wanted (\code{"R"} instead of \code{"N"}).}
 \item{check_as}{Character vector or \code{NULL}. Overrides the pattern used in
 the checker's rule table. For fields the constructor resolves, such as a
 worker count that takes \code{NULL} and comes back as an integer.}
+
+\item{from}{String, language object or \code{NULL}. For \code{"merge"} fields, the
+base the caller's list is merged into, see \code{\link[=p_merge]{p_merge()}}.}
+
+\item{overrides}{List, language object or \code{NULL}. For \code{"merge"} fields,
+constructor-specific defaults layered over \code{from}.}
+
+\item{required}{Boolean. The formal has no default and the caller must
+supply it. \code{default} is ignored. Defaults to \code{FALSE}.}
 
 \item{doc}{String or \code{NULL}. Roxygen prose for this field.}
 }

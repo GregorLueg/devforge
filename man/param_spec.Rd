@@ -36,8 +36,9 @@ formals and of the returned list.}
 \item{description}{String or \code{NULL}. Roxygen \verb{@description} prose. Defaults
 to \code{NULL}.}
 
-\item{details}{String or \code{NULL}. Roxygen \verb{@details} prose, emitted verbatim
-so it can carry its own \verb{\\itemize\{\}}. Defaults to \code{NULL}.}
+\item{details}{String or \code{NULL}. Roxygen \verb{@details} prose. Line breaks are
+kept so it can carry its own \verb{\\itemize\{\}}, and lines over the width are
+wrapped. Defaults to \code{NULL}.}
 
 \item{references}{String or \code{NULL}. Roxygen \verb{@references} prose. Defaults
 to \code{NULL}.}
