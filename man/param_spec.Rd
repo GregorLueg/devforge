@@ -10,6 +10,7 @@ param_spec(
   fields,
   description = NULL,
   details = NULL,
+  references = NULL,
   return_order = NULL,
   checker = to_pascal_case(name),
   checker_args = list(),
@@ -37,6 +38,9 @@ to \code{NULL}.}
 
 \item{details}{String or \code{NULL}. Roxygen \verb{@details} prose, emitted verbatim
 so it can carry its own \verb{\\itemize\{\}}. Defaults to \code{NULL}.}
+
+\item{references}{String or \code{NULL}. Roxygen \verb{@references} prose. Defaults
+to \code{NULL}.}
 
 \item{return_order}{Character vector or \code{NULL}. The order of the returned
 list, when it differs from the order of the formals. Must be a permutation

@@ -163,6 +163,13 @@ emit_ctor_roxygen <- function(spec) {
     "#' @returns A named list with the following elements:",
     roxygen_itemize(spec)
   )
+  if (!is.null(spec$references)) {
+    lines <- c(
+      lines,
+      "#'",
+      wrap_roxygen(spec$references, prefix = "#' @references ")
+    )
+  }
   if (spec$export) {
     lines <- c(lines, "#'", "#' @export")
   } else {
