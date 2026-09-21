@@ -1,5 +1,11 @@
 # Changelog
 
+## devforge 0.0.3
+
+### Features
+
+- Added the option to have references for the parameter wrappers.
+
 ## devforge 0.0.2
 
 ### Bug fixes

@@ -13,6 +13,7 @@ param_spec(
   fields,
   description = NULL,
   details = NULL,
+  references = NULL,
   return_order = NULL,
   checker = to_pascal_case(name),
   checker_args = list(),
@@ -52,6 +53,10 @@ param_spec(
 
   String or `NULL`. Roxygen `@details` prose, emitted verbatim so it can
   carry its own `\itemize{}`. Defaults to `NULL`.
+
+- references:
+
+  String or `NULL`. Roxygen `@references` prose. Defaults to `NULL`.
 
 - return_order:
 

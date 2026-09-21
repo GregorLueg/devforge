@@ -16,4 +16,5 @@ render_specs(specs)
 
 ## Value
 
-A named list of character vectors, one per entry of `GENERATED_FILES`.
+A named list of character vectors, one per entry of `GENERATED_FILES`,
+without the generated header.
