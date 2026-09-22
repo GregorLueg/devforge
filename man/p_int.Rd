@@ -9,12 +9,14 @@ p_int(
   range = NULL,
   null_ok = FALSE,
   len = 1L,
+  integerish = FALSE,
   check_as = NULL,
   doc = NULL
 )
 }
 \arguments{
-\item{default}{Integer or \code{NULL}. The default value.}
+\item{default}{Integer or \code{NULL}. The default value. Leave it out for a
+formal the caller must supply.}
 
 \item{range}{String or \code{NULL}. Checkmate range suffix, for example \code{"[1,)"}.}
 
@@ -22,6 +24,10 @@ p_int(
 
 \item{len}{Integer or string. \code{1L} for a scalar, \code{"+"} for one or more.
 Defaults to \code{1L}.}
+
+\item{integerish}{Boolean. Accept whole doubles such as \code{1000} as well
+(\code{"X"} rather than \code{"I"}). Pair it with an \code{as.integer()} in \code{extra_ctor}
+when downstream code needs a real integer. Defaults to \code{FALSE}.}
 
 \item{check_as}{Character vector or \code{NULL}. Overrides the checker's pattern,
 for a field the constructor resolves before returning it.}

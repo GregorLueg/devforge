@@ -7,7 +7,8 @@
 p_free(default, doc = NULL)
 }
 \arguments{
-\item{default}{Any. The default value.}
+\item{default}{Any. The default value. Leave it out for a formal the caller
+must supply.}
 
 \item{doc}{String or \code{NULL}. Roxygen prose for this field.}
 }

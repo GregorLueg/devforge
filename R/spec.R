@@ -13,8 +13,9 @@
 #' formals and of the returned list.
 #' @param description String or `NULL`. Roxygen `@description` prose. Defaults
 #' to `NULL`.
-#' @param details String or `NULL`. Roxygen `@details` prose, emitted verbatim
-#' so it can carry its own `\itemize{}`. Defaults to `NULL`.
+#' @param details String or `NULL`. Roxygen `@details` prose. Line breaks are
+#' kept so it can carry its own `\itemize{}`, and lines over the width are
+#' wrapped. Defaults to `NULL`.
 #' @param references String or `NULL`. Roxygen `@references` prose. Defaults
 #' to `NULL`.
 #' @param return_order Character vector or `NULL`. The order of the returned
@@ -127,6 +128,8 @@ param_spec <- function(
 #' @param title String. The roxygen title line.
 #' @param fields Named list of [p_int()] and friends.
 #' @param description String or `NULL`. Roxygen `@description` prose.
+#' @param details String or `NULL`. Roxygen `@details` prose.
+#' @param references String or `NULL`. Roxygen `@references` prose.
 #' @param checker String or `NULL`. PascalCase stem for a checker over this
 #' block, for the defaults blocks that are validated on their own. Defaults to
 #' `NULL`.
@@ -142,6 +145,8 @@ param_defaults <- function(
   title,
   fields,
   description = NULL,
+  details = NULL,
+  references = NULL,
   checker = NULL,
   label = NULL,
   hint = NULL,
@@ -152,11 +157,19 @@ param_defaults <- function(
     title = title,
     fields = fields,
     description = description,
+    details = details,
+    references = references,
     checker = checker,
     label = label,
     hint = hint,
     export = export
   )
+  if (any(purrr::map_lgl(fields, \(f) identical(f$type, "merge")))) {
+    stop("A defaults block cannot carry `p_merge()` fields.")
+  }
+  if (any(purrr::map_lgl(fields, \(f) f$required))) {
+    stop("A defaults block cannot carry fields without a default.")
+  }
   spec$defaults_only <- TRUE
   spec
 }

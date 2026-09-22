@@ -9,6 +9,8 @@ param_defaults(
   title,
   fields,
   description = NULL,
+  details = NULL,
+  references = NULL,
   checker = NULL,
   label = NULL,
   hint = NULL,
@@ -24,6 +26,10 @@ param_defaults(
 \item{fields}{Named list of \code{\link[=p_int]{p_int()}} and friends.}
 
 \item{description}{String or \code{NULL}. Roxygen \verb{@description} prose.}
+
+\item{details}{String or \code{NULL}. Roxygen \verb{@details} prose.}
+
+\item{references}{String or \code{NULL}. Roxygen \verb{@references} prose.}
 
 \item{checker}{String or \code{NULL}. PascalCase stem for a checker over this
 block, for the defaults blocks that are validated on their own. Defaults to

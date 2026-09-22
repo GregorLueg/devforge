@@ -7,7 +7,8 @@
 p_chr(default, null_ok = FALSE, len = 1L, doc = NULL)
 }
 \arguments{
-\item{default}{String or \code{NULL}. The default value.}
+\item{default}{String or \code{NULL}. The default value. Leave it out for a
+formal the caller must supply.}
 
 \item{null_ok}{Boolean. Whether \code{NULL} is permitted. Defaults to \code{FALSE}.}
 

@@ -22,7 +22,52 @@
 #'
 #' @keywords internal
 deparse_value <- function(x) {
-  paste(deparse(x, width.cutoff = 500L), collapse = " ")
+  if (is.double(x) && is.null(attributes(x)) && length(x) > 0L) {
+    src <- purrr::map_chr(x, deparse_number)
+    return(if (length(src) == 1L) src else sprintf("c(%s)", toString(src)))
+  }
+  src <- paste(deparse(x, width.cutoff = 500L), collapse = " ")
+  if (!is.language(x) && !identical(eval(str2lang(src), baseenv()), x)) {
+    src <- paste(
+      deparse(
+        x,
+        width.cutoff = 500L,
+        control = c(
+          "keepNA",
+          "keepInteger",
+          "niceNames",
+          "showAttributes",
+          "digits17"
+        )
+      ),
+      collapse = " "
+    )
+  }
+  src
+}
+
+#' The shortest literal that reads back as the same double
+#'
+#' @description `deparse()` stops at 15 significant digits, which turns
+#' `1e-300` into `9.99999999999999e-301` and `1/3` into a different double.
+#'
+#' @param x A double scalar.
+#'
+#' @returns String.
+#'
+#' @keywords internal
+deparse_number <- function(x) {
+  src <- deparse(x)
+  if (!is.finite(x) || identical(as.numeric(src), x)) {
+    return(src)
+  }
+  for (digits in 1:17) {
+    src <- trimws(formatC(x, digits = digits, format = "g"))
+    if (identical(as.numeric(src), x)) {
+      break
+    }
+  }
+  src
 }
 
 #' Convert a snake_case name into PascalCase
@@ -179,6 +224,43 @@ emit_call <- function(fn, args, budget = 72L) {
     }
   })
   c(paste0(fn, "("), indent(unlist(body, use.names = FALSE)), ")")
+}
+
+#' Source for a string literal that fits the line width
+#'
+#' @description Short strings come back as one literal. Longer ones are split
+#' on spaces into a `paste()` call, the way the packages already write their
+#' long messages by hand.
+#'
+#' @param x String.
+#' @param budget Integer. Maximum characters per chunk, quotes included.
+#' Defaults to `66L`.
+#'
+#' @returns Character vector of R source lines.
+#'
+#' @keywords internal
+emit_string <- function(x, budget = 66L) {
+  checkmate::qassert(x, "S1")
+  checkmate::qassert(budget, "I1[10,)")
+  one_line <- deparse_value(x)
+  if (nchar(one_line) <= budget) {
+    return(one_line)
+  }
+  words <- strsplit(x, " ", fixed = TRUE)[[1L]]
+  chunks <- character(0)
+  current <- character(0)
+  for (word in words) {
+    candidate <- paste(c(current, word), collapse = " ")
+    if (length(current) > 0L && nchar(deparse_value(candidate)) > budget) {
+      chunks <- c(chunks, paste(current, collapse = " "))
+      current <- word
+    } else {
+      current <- c(current, word)
+    }
+  }
+  chunks <- c(chunks, paste(current, collapse = " "))
+  src <- purrr::map_chr(chunks, deparse_value)
+  c("paste(", indent(paste0(src, c(rep(",", length(src) - 1L), ""))), ")")
 }
 
 #' Put a prefix in front of the first line only

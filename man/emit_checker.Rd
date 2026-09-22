@@ -4,10 +4,13 @@
 \alias{emit_checker}
 \title{A generated \code{check*Params()} and its assertion sibling}
 \usage{
-emit_checker(spec)
+emit_checker(spec, specs = list())
 }
 \arguments{
 \item{spec}{A \code{devforge_spec}.}
+
+\item{specs}{Named list of \code{devforge_spec} objects that merged fields may
+refer to. Defaults to an empty list.}
 }
 \value{
 Character vector of R source lines, or an empty vector when the

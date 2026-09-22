@@ -14,7 +14,8 @@ p_dbl(
 )
 }
 \arguments{
-\item{default}{Numeric or \code{NULL}. The default value.}
+\item{default}{Numeric or \code{NULL}. The default value. Leave it out for a
+formal the caller must supply.}
 
 \item{range}{String or \code{NULL}. Checkmate range suffix, for example
 \code{"(0, 1]"}.}
