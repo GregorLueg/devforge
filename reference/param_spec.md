@@ -51,8 +51,9 @@ param_spec(
 
 - details:
 
-  String or `NULL`. Roxygen `@details` prose, emitted verbatim so it can
-  carry its own `\itemize{}`. Defaults to `NULL`.
+  String or `NULL`. Roxygen `@details` prose. Line breaks are kept so it
+  can carry its own `\itemize{}`, and lines over the width are wrapped.
+  Defaults to `NULL`.
 
 - references:
 

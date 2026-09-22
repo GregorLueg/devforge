@@ -5,7 +5,7 @@ A generated `check*Params()` and its assertion sibling
 ## Usage
 
 ``` r
-emit_checker(spec)
+emit_checker(spec, specs = list())
 ```
 
 ## Arguments
@@ -13,6 +13,11 @@ emit_checker(spec)
 - spec:
 
   A `devforge_spec`.
+
+- specs:
+
+  Named list of `devforge_spec` objects that merged fields may refer to.
+  Defaults to an empty list.
 
 ## Value
 

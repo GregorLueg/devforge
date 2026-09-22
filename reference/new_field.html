@@ -11,7 +11,7 @@ assertion, one rule table entry and one roxygen line."><meta property="og:image"
 
     <a class="navbar-brand me-2" href="../index.html">devforge</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -63,6 +63,9 @@ assertion, one rule table entry and one roxygen line.</p>
 <span>  choices <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  letter <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  check_as <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  from <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  overrides <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  required <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  doc <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -72,7 +75,8 @@ assertion, one rule table entry and one roxygen line.</p>
 
 
 <dl><dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>String. One of <code>c("int", "dbl", "lgl", "chr", "choice", "free")</code>.</p></dd>
+<dd><p>String. One of
+<code>c("int", "dbl", "lgl", "chr", "choice", "free", "merge")</code>.</p></dd>
 
 
 <dt id="arg-default">default<a class="anchor" aria-label="anchor" href="#arg-default"></a></dt>
@@ -105,6 +109,21 @@ rare case where a stricter class is wanted (<code>"R"</code> instead of <code>"N
 <dd><p>Character vector or <code>NULL</code>. Overrides the pattern used in
 the checker's rule table. For fields the constructor resolves, such as a
 worker count that takes <code>NULL</code> and comes back as an integer.</p></dd>
+
+
+<dt id="arg-from">from<a class="anchor" aria-label="anchor" href="#arg-from"></a></dt>
+<dd><p>String, language object or <code>NULL</code>. For <code>"merge"</code> fields, the
+base the caller's list is merged into, see <code><a href="p_merge.html">p_merge()</a></code>.</p></dd>
+
+
+<dt id="arg-overrides">overrides<a class="anchor" aria-label="anchor" href="#arg-overrides"></a></dt>
+<dd><p>List, language object or <code>NULL</code>. For <code>"merge"</code> fields,
+constructor-specific defaults layered over <code>from</code>.</p></dd>
+
+
+<dt id="arg-required">required<a class="anchor" aria-label="anchor" href="#arg-required"></a></dt>
+<dd><p>Boolean. The formal has no default and the caller must
+supply it. <code>default</code> is ignored. Defaults to <code>FALSE</code>.</p></dd>
 
 
 <dt id="arg-doc">doc<a class="anchor" aria-label="anchor" href="#arg-doc"></a></dt>

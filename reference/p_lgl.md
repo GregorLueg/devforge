@@ -12,7 +12,8 @@ p_lgl(default, null_ok = FALSE, doc = NULL)
 
 - default:
 
-  Boolean or `NULL`. The default value.
+  Boolean or `NULL`. The default value. Leave it out for a formal the
+  caller must supply.
 
 - null_ok:
 

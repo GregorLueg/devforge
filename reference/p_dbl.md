@@ -19,7 +19,8 @@ p_dbl(
 
 - default:
 
-  Numeric or `NULL`. The default value.
+  Numeric or `NULL`. The default value. Leave it out for a formal the
+  caller must supply.
 
 - range:
 

@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">devforge</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,7 +70,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Generating parameter wrappers</h1>
 
       <p class="author">Gregor Lueg</p>
-      <p class="date">2026-09-21</p>
+      <p class="date">2026-09-22</p>
 
       <small class="dont-index">Source: <a href="https://github.com/GregorLueg/devforge/blob/main/vignettes/params.qmd" class="external-link"><code>vignettes/params.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
@@ -249,10 +249,158 @@
 <span><span class="co">#&gt; [1] "kmknn" "hnsw"  "annoy"</span></span></code></pre></div>
 </div>
 <p><code><a href="../reference/p_free.html">p_free()</a></code> is the hatch for anything a pattern cannot express. It contributes a formal, a default and its roxygen, and nothing else. Pair it with an <code>extra_check</code>.</p>
+<p>Leave the default out and the formal becomes required. The roxygen says <code>Required.</code> instead of <code>Defaults to</code>, and the constructor fails the way any R function does when the caller forgets it. <code>integerish = TRUE</code> swaps the <code>"I"</code> for an <code>"X"</code>, for the <code>n_epochs = 1000</code> a user types without the <code>L</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">devforge</span><span class="fu">:::</span><span class="fu"><a href="../reference/field_qassert.html">field_qassert</a></span><span class="op">(</span><span class="fu"><a href="../reference/p_int.html">p_int</a></span><span class="op">(</span>range <span class="op">=</span> <span class="st">"[1,)"</span>, integerish <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "X1[1,)"</span></span>
+<span><span class="fu"><a href="../reference/p_int.html">p_int</a></span><span class="op">(</span>range <span class="op">=</span> <span class="st">"[1,)"</span><span class="op">)</span><span class="op">$</span><span class="va">required</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+</div>
+</section><section class="section level2"><h2 id="merging-a-shared-defaults-block">Merging a shared defaults block<a class="anchor" aria-label="anchor" href="#merging-a-shared-defaults-block"></a>
+</h2>
+<p>Half the constructors in a single cell package take the same kNN block. A <code><a href="../reference/param_defaults.html">param_defaults()</a></code> spec holds it once:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">knn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/param_defaults.html">param_defaults</a></span><span class="op">(</span></span>
+<span>  name <span class="op">=</span> <span class="st">"knn_defaults"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Default parameters for the kNN search"</span>,</span>
+<span>  checker <span class="op">=</span> <span class="st">"Knn"</span>,</span>
+<span>  label <span class="op">=</span> <span class="st">"kNN parameters"</span>,</span>
+<span>  fields <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    k <span class="op">=</span> <span class="fu"><a href="../reference/p_int.html">p_int</a></span><span class="op">(</span><span class="fl">15L</span>, range <span class="op">=</span> <span class="st">"[1,)"</span>, doc <span class="op">=</span> <span class="st">"Number of neighbours."</span><span class="op">)</span>,</span>
+<span>    metric <span class="op">=</span> <span class="fu"><a href="../reference/p_choice.html">p_choice</a></span><span class="op">(</span></span>
+<span>      <span class="st">"euclidean"</span>,</span>
+<span>      <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"euclidean"</span>, <span class="st">"cosine"</span><span class="op">)</span>,</span>
+<span>      doc <span class="op">=</span> <span class="st">"Distance metric."</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<p>A <code><a href="../reference/p_merge.html">p_merge()</a></code> field on another spec takes the caller’s overrides as a list. The constructor layers them over <code>params_knn_defaults()</code>, then over any constructor-specific <code>overrides</code>, and splices the result flat into the returned list at the field’s position:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">spec_umap</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/param_spec.html">param_spec</a></span><span class="op">(</span></span>
+<span>  name <span class="op">=</span> <span class="st">"umap"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Wrapper function for the UMAP parameters"</span>,</span>
+<span>  checker <span class="op">=</span> <span class="st">"Umap"</span>,</span>
+<span>  label <span class="op">=</span> <span class="st">"UMAP parameters"</span>,</span>
+<span>  fields <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    n_epochs <span class="op">=</span> <span class="fu"><a href="../reference/p_int.html">p_int</a></span><span class="op">(</span>range <span class="op">=</span> <span class="st">"[1,)"</span>, integerish <span class="op">=</span> <span class="cn">TRUE</span>, doc <span class="op">=</span> <span class="st">"Epochs."</span><span class="op">)</span>,</span>
+<span>    min_dist <span class="op">=</span> <span class="fu"><a href="../reference/p_dbl.html">p_dbl</a></span><span class="op">(</span><span class="fl">0.1</span>, range <span class="op">=</span> <span class="st">"(0,1]"</span>, doc <span class="op">=</span> <span class="st">"Minimum distance."</span><span class="op">)</span>,</span>
+<span>    knn <span class="op">=</span> <span class="fu"><a href="../reference/p_merge.html">p_merge</a></span><span class="op">(</span></span>
+<span>      <span class="st">"knn_defaults"</span>,</span>
+<span>      overrides <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>k <span class="op">=</span> <span class="fl">30L</span><span class="op">)</span>,</span>
+<span>      doc <span class="op">=</span> <span class="st">"Overrides for the kNN search."</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu">devforge</span><span class="fu">:::</span><span class="fu"><a href="../reference/emit_ctor.html">emit_ctor</a></span><span class="op">(</span><span class="va">spec_umap</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; #' Wrapper function for the UMAP parameters</span></span>
+<span><span class="co">#&gt; #'</span></span>
+<span><span class="co">#&gt; #' @param n_epochs Integer. Epochs. Required.</span></span>
+<span><span class="co">#&gt; #' @param min_dist Numeric. Minimum distance. Defaults to `0.1`.</span></span>
+<span><span class="co">#&gt; #' @param knn List. Overrides for the kNN search. See [params_knn_defaults()]</span></span>
+<span><span class="co">#&gt; #' for the available elements. Defaults to `list()`.</span></span>
+<span><span class="co">#&gt; #'</span></span>
+<span><span class="co">#&gt; #' @returns A named list with the following elements:</span></span>
+<span><span class="co">#&gt; #' \itemize{</span></span>
+<span><span class="co">#&gt; #'  \item n_epochs - Integer. Epochs. Required.</span></span>
+<span><span class="co">#&gt; #'  \item min_dist - Numeric. Minimum distance. Defaults to `0.1`.</span></span>
+<span><span class="co">#&gt; #'  \item The elements of [params_knn_defaults()], overridden by `knn`, spliced</span></span>
+<span><span class="co">#&gt; #'  in at this position.</span></span>
+<span><span class="co">#&gt; #' }</span></span>
+<span><span class="co">#&gt; #'</span></span>
+<span><span class="co">#&gt; #' @export</span></span>
+<span><span class="co">#&gt; params_umap &lt;- function(</span></span>
+<span><span class="co">#&gt;   n_epochs,</span></span>
+<span><span class="co">#&gt;   min_dist = 0.1,</span></span>
+<span><span class="co">#&gt;   knn = list()</span></span>
+<span><span class="co">#&gt; ) {</span></span>
+<span><span class="co">#&gt;   # Checks</span></span>
+<span><span class="co">#&gt;   checkmate::qassert(n_epochs, "X1[1,)")</span></span>
+<span><span class="co">#&gt;   checkmate::qassert(min_dist, "N1(0,1]")</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;   # Merge</span></span>
+<span><span class="co">#&gt;   knn &lt;- utils::modifyList(params_knn_defaults(),</span></span>
+<span><span class="co">#&gt;     utils::modifyList(list(k = 30L), knn,</span></span>
+<span><span class="co">#&gt;       keep.null = TRUE), keep.null = TRUE)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;   # Return</span></span>
+<span><span class="co">#&gt;   c(</span></span>
+<span><span class="co">#&gt;     list(</span></span>
+<span><span class="co">#&gt;       n_epochs = n_epochs,</span></span>
+<span><span class="co">#&gt;       min_dist = min_dist</span></span>
+<span><span class="co">#&gt;     ),</span></span>
+<span><span class="co">#&gt;     knn</span></span>
+<span><span class="co">#&gt;   )</span></span>
+<span><span class="co">#&gt; }</span></span></code></pre></div>
+</div>
+<p>The checker follows the merge. <code>checkUmapParams()</code> requires <code>k</code> and <code>metric</code> alongside the two plain fields and validates them with the rules of the <code>knn_defaults</code> spec, so nobody writes a second rule table for the same block:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu">devforge</span><span class="fu">:::</span><span class="fu"><a href="../reference/emit_checker.html">emit_checker</a></span><span class="op">(</span><span class="va">spec_umap</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>knn_defaults <span class="op">=</span> <span class="va">knn</span><span class="op">)</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; #' Check UMAP parameters</span></span>
+<span><span class="co">#&gt; #'</span></span>
+<span><span class="co">#&gt; #' @description Checkmate extension for the output of [params_umap()].</span></span>
+<span><span class="co">#&gt; #'</span></span>
+<span><span class="co">#&gt; #' @param x The object to check.</span></span>
+<span><span class="co">#&gt; #'</span></span>
+<span><span class="co">#&gt; #' @returns `TRUE` if the check was successful, otherwise a</span></span>
+<span><span class="co">#&gt; #' checkmate-style error string.</span></span>
+<span><span class="co">#&gt; #'</span></span>
+<span><span class="co">#&gt; #' @keywords internal</span></span>
+<span><span class="co">#&gt; checkUmapParams &lt;- function(x) {</span></span>
+<span><span class="co">#&gt;   res &lt;- check_list_shape(x, c("n_epochs", "min_dist", "k", "metric"))</span></span>
+<span><span class="co">#&gt;   if (!isTRUE(res)) {</span></span>
+<span><span class="co">#&gt;     return(res)</span></span>
+<span><span class="co">#&gt;   }</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;   res &lt;- apply_qtest_rules(</span></span>
+<span><span class="co">#&gt;     x,</span></span>
+<span><span class="co">#&gt;     list(</span></span>
+<span><span class="co">#&gt;       n_epochs = "X1[1,)",</span></span>
+<span><span class="co">#&gt;       min_dist = "N1(0,1]",</span></span>
+<span><span class="co">#&gt;       k = "I1[1,)"</span></span>
+<span><span class="co">#&gt;     ),</span></span>
+<span><span class="co">#&gt;     label = "UMAP parameters"</span></span>
+<span><span class="co">#&gt;   )</span></span>
+<span><span class="co">#&gt;   if (!isTRUE(res)) {</span></span>
+<span><span class="co">#&gt;     return(res)</span></span>
+<span><span class="co">#&gt;   }</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;   res &lt;- apply_choice_rules(</span></span>
+<span><span class="co">#&gt;     x,</span></span>
+<span><span class="co">#&gt;     list(</span></span>
+<span><span class="co">#&gt;       metric = c("euclidean", "cosine")</span></span>
+<span><span class="co">#&gt;     ),</span></span>
+<span><span class="co">#&gt;     label = "UMAP parameters"</span></span>
+<span><span class="co">#&gt;   )</span></span>
+<span><span class="co">#&gt;   if (!isTRUE(res)) {</span></span>
+<span><span class="co">#&gt;     return(res)</span></span>
+<span><span class="co">#&gt;   }</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;   return(TRUE)</span></span>
+<span><span class="co">#&gt; }</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; #' Assert UMAP parameters</span></span>
+<span><span class="co">#&gt; #'</span></span>
+<span><span class="co">#&gt; #' @inheritParams checkUmapParams</span></span>
+<span><span class="co">#&gt; #' @param .var.name Name of the checked object to print in assertions.</span></span>
+<span><span class="co">#&gt; #' @param add Collection to store assertion messages. See</span></span>
+<span><span class="co">#&gt; #' [checkmate::makeAssertCollection()].</span></span>
+<span><span class="co">#&gt; #'</span></span>
+<span><span class="co">#&gt; #' @returns Invisibly returns the checked object if the assertion is</span></span>
+<span><span class="co">#&gt; #' successful.</span></span>
+<span><span class="co">#&gt; #'</span></span>
+<span><span class="co">#&gt; #' @keywords internal</span></span>
+<span><span class="co">#&gt; assertUmapParams &lt;- checkmate::makeAssertionFunction(checkUmapParams)</span></span></code></pre></div>
+</div>
+<p><code>from</code> and <code>overrides</code> can also be language objects. They are evaluated inside the constructor and may reference the other formals, for a base that depends on <code>neighbours_within_batch</code> say. A language <code>from</code> contributes nothing to the checker, since there is no spec to take rules from.</p>
 </section><section class="section level2"><h2 id="running-it">Running it<a class="anchor" aria-label="anchor" href="#running-it"></a>
 </h2>
 <p>Specs live in <code>inst/params/*.R</code>. They ship, so one package can reference another’s rather than reaching in with <code>:::</code>.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devforge</span><span class="fu">::</span><span class="fu"><a href="../reference/forge_params.html">forge_params</a></span><span class="op">(</span><span class="st">"."</span><span class="op">)</span></span></code></pre></div>
 <p>That writes three files under <code>R/</code>, each headed <code># Generated by devforge. Do not edit.</code>, and runs <code>air</code> over them:</p>
 <ul>
@@ -265,7 +413,7 @@
 </ul>
 <p>The hand-written checkers that validate something other than a params list stay where they are. <code>checkGeneWalkGraphDt()</code> checks a <code>data.table</code>, and that is not this tool’s job.</p>
 <p>For CI there is a drift guard that regenerates into a temporary directory and compares:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devforge</span><span class="fu">::</span><span class="fu"><a href="../reference/params_up_to_date.html">params_up_to_date</a></span><span class="op">(</span><span class="st">"."</span><span class="op">)</span></span></code></pre></div>
 <p><code>TRUE</code> when everything matches, otherwise the paths that are stale. That catches both a hand-edit of a generated file and a spec change that was never regenerated.</p>
 </section><section class="section level2"><h2 id="what-is-next">What is next<a class="anchor" aria-label="anchor" href="#what-is-next"></a>

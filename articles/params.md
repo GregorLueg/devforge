@@ -222,6 +222,182 @@ is the hatch for anything a pattern cannot express. It contributes a
 formal, a default and its roxygen, and nothing else. Pair it with an
 `extra_check`.
 
+Leave the default out and the formal becomes required. The roxygen says
+`Required.` instead of `Defaults to`, and the constructor fails the way
+any R function does when the caller forgets it. `integerish = TRUE`
+swaps the `"I"` for an `"X"`, for the `n_epochs = 1000` a user types
+without the `L`:
+
+``` r
+
+devforge:::field_qassert(p_int(range = "[1,)", integerish = TRUE))
+#> [1] "X1[1,)"
+p_int(range = "[1,)")$required
+#> [1] TRUE
+```
+
+## Merging a shared defaults block
+
+Half the constructors in a single cell package take the same kNN block.
+A
+[`param_defaults()`](https://gregorlueg.github.io/devforge/reference/param_defaults.md)
+spec holds it once:
+
+``` r
+
+knn <- param_defaults(
+  name = "knn_defaults",
+  title = "Default parameters for the kNN search",
+  checker = "Knn",
+  label = "kNN parameters",
+  fields = list(
+    k = p_int(15L, range = "[1,)", doc = "Number of neighbours."),
+    metric = p_choice(
+      "euclidean",
+      c("euclidean", "cosine"),
+      doc = "Distance metric."
+    )
+  )
+)
+```
+
+A
+[`p_merge()`](https://gregorlueg.github.io/devforge/reference/p_merge.md)
+field on another spec takes the caller’s overrides as a list. The
+constructor layers them over `params_knn_defaults()`, then over any
+constructor-specific `overrides`, and splices the result flat into the
+returned list at the field’s position:
+
+``` r
+
+spec_umap <- param_spec(
+  name = "umap",
+  title = "Wrapper function for the UMAP parameters",
+  checker = "Umap",
+  label = "UMAP parameters",
+  fields = list(
+    n_epochs = p_int(range = "[1,)", integerish = TRUE, doc = "Epochs."),
+    min_dist = p_dbl(0.1, range = "(0,1]", doc = "Minimum distance."),
+    knn = p_merge(
+      "knn_defaults",
+      overrides = list(k = 30L),
+      doc = "Overrides for the kNN search."
+    )
+  )
+)
+cat(devforge:::emit_ctor(spec_umap), sep = "\n")
+#> #' Wrapper function for the UMAP parameters
+#> #'
+#> #' @param n_epochs Integer. Epochs. Required.
+#> #' @param min_dist Numeric. Minimum distance. Defaults to `0.1`.
+#> #' @param knn List. Overrides for the kNN search. See [params_knn_defaults()]
+#> #' for the available elements. Defaults to `list()`.
+#> #'
+#> #' @returns A named list with the following elements:
+#> #' \itemize{
+#> #'  \item n_epochs - Integer. Epochs. Required.
+#> #'  \item min_dist - Numeric. Minimum distance. Defaults to `0.1`.
+#> #'  \item The elements of [params_knn_defaults()], overridden by `knn`, spliced
+#> #'  in at this position.
+#> #' }
+#> #'
+#> #' @export
+#> params_umap <- function(
+#>   n_epochs,
+#>   min_dist = 0.1,
+#>   knn = list()
+#> ) {
+#>   # Checks
+#>   checkmate::qassert(n_epochs, "X1[1,)")
+#>   checkmate::qassert(min_dist, "N1(0,1]")
+#> 
+#>   # Merge
+#>   knn <- utils::modifyList(params_knn_defaults(),
+#>     utils::modifyList(list(k = 30L), knn,
+#>       keep.null = TRUE), keep.null = TRUE)
+#> 
+#>   # Return
+#>   c(
+#>     list(
+#>       n_epochs = n_epochs,
+#>       min_dist = min_dist
+#>     ),
+#>     knn
+#>   )
+#> }
+```
+
+The checker follows the merge. `checkUmapParams()` requires `k` and
+`metric` alongside the two plain fields and validates them with the
+rules of the `knn_defaults` spec, so nobody writes a second rule table
+for the same block:
+
+``` r
+
+cat(devforge:::emit_checker(spec_umap, list(knn_defaults = knn)), sep = "\n")
+#> #' Check UMAP parameters
+#> #'
+#> #' @description Checkmate extension for the output of [params_umap()].
+#> #'
+#> #' @param x The object to check.
+#> #'
+#> #' @returns `TRUE` if the check was successful, otherwise a
+#> #' checkmate-style error string.
+#> #'
+#> #' @keywords internal
+#> checkUmapParams <- function(x) {
+#>   res <- check_list_shape(x, c("n_epochs", "min_dist", "k", "metric"))
+#>   if (!isTRUE(res)) {
+#>     return(res)
+#>   }
+#> 
+#>   res <- apply_qtest_rules(
+#>     x,
+#>     list(
+#>       n_epochs = "X1[1,)",
+#>       min_dist = "N1(0,1]",
+#>       k = "I1[1,)"
+#>     ),
+#>     label = "UMAP parameters"
+#>   )
+#>   if (!isTRUE(res)) {
+#>     return(res)
+#>   }
+#> 
+#>   res <- apply_choice_rules(
+#>     x,
+#>     list(
+#>       metric = c("euclidean", "cosine")
+#>     ),
+#>     label = "UMAP parameters"
+#>   )
+#>   if (!isTRUE(res)) {
+#>     return(res)
+#>   }
+#> 
+#>   return(TRUE)
+#> }
+#> 
+#> #' Assert UMAP parameters
+#> #'
+#> #' @inheritParams checkUmapParams
+#> #' @param .var.name Name of the checked object to print in assertions.
+#> #' @param add Collection to store assertion messages. See
+#> #' [checkmate::makeAssertCollection()].
+#> #'
+#> #' @returns Invisibly returns the checked object if the assertion is
+#> #' successful.
+#> #'
+#> #' @keywords internal
+#> assertUmapParams <- checkmate::makeAssertionFunction(checkUmapParams)
+```
+
+`from` and `overrides` can also be language objects. They are evaluated
+inside the constructor and may reference the other formals, for a base
+that depends on `neighbours_within_batch` say. A language `from`
+contributes nothing to the checker, since there is no spec to take rules
+from.
+
 ## Running it
 
 Specs live in `inst/params/*.R`. They ship, so one package can reference

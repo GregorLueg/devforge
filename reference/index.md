@@ -27,6 +27,8 @@ One constructor per kind of parameter
   : Choice field
 - [`p_free()`](https://gregorlueg.github.io/devforge/reference/p_free.md)
   : Unvalidated field
+- [`p_merge()`](https://gregorlueg.github.io/devforge/reference/p_merge.md)
+  : Merged sub-list field
 
 ## Generation
 

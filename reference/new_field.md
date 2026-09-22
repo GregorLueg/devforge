@@ -18,6 +18,9 @@ new_field(
   choices = NULL,
   letter = NULL,
   check_as = NULL,
+  from = NULL,
+  overrides = NULL,
+  required = FALSE,
   doc = NULL
 )
 ```
@@ -26,7 +29,8 @@ new_field(
 
 - type:
 
-  String. One of `c("int", "dbl", "lgl", "chr", "choice", "free")`.
+  String. One of
+  `c("int", "dbl", "lgl", "chr", "choice", "free", "merge")`.
 
 - default:
 
@@ -59,6 +63,22 @@ new_field(
   Character vector or `NULL`. Overrides the pattern used in the
   checker's rule table. For fields the constructor resolves, such as a
   worker count that takes `NULL` and comes back as an integer.
+
+- from:
+
+  String, language object or `NULL`. For `"merge"` fields, the base the
+  caller's list is merged into, see
+  [`p_merge()`](https://gregorlueg.github.io/devforge/reference/p_merge.md).
+
+- overrides:
+
+  List, language object or `NULL`. For `"merge"` fields,
+  constructor-specific defaults layered over `from`.
+
+- required:
+
+  Boolean. The formal has no default and the caller must supply it.
+  `default` is ignored. Defaults to `FALSE`.
 
 - doc:
 

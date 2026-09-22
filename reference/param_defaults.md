@@ -14,6 +14,8 @@ param_defaults(
   title,
   fields,
   description = NULL,
+  details = NULL,
+  references = NULL,
   checker = NULL,
   label = NULL,
   hint = NULL,
@@ -41,6 +43,14 @@ param_defaults(
 - description:
 
   String or `NULL`. Roxygen `@description` prose.
+
+- details:
+
+  String or `NULL`. Roxygen `@details` prose.
+
+- references:
+
+  String or `NULL`. Roxygen `@references` prose.
 
 - checker:
 

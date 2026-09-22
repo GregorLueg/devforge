@@ -33,6 +33,29 @@ spec_kernel <- param_spec(
 )
 ```
 
+Shared defaults blocks are merged rather than repeated. A
+[`p_merge()`](https://gregorlueg.github.io/devforge/reference/p_merge.md)
+field takes the caller’s overrides, layers them over
+`params_knn_defaults()` and splices the result flat into the returned
+list. The checker picks up the spliced elements and their rules from the
+base spec:
+
+``` r
+
+spec_umap <- param_spec(
+  name = "umap",
+  title = "Wrapper function for the UMAP parameters",
+  checker = "Umap",
+  fields = list(
+    n_epochs = p_int(range = "[1,)", integerish = TRUE, doc = "Epochs."),
+    knn = p_merge("knn_defaults", doc = "Overrides for the kNN search.")
+  )
+)
+```
+
+Leave the default out of a field and the formal is required.
+`integerish` accepts the `1000` a user types without the `L`.
+
 Specs live in `inst/params/*.R`. Then:
 
 ``` r
@@ -86,6 +109,8 @@ One constructor per kind of parameter
   : Choice field
 - [`p_free()`](https://gregorlueg.github.io/devforge/reference/p_free.md)
   : Unvalidated field
+- [`p_merge()`](https://gregorlueg.github.io/devforge/reference/p_merge.md)
+  : Merged sub-list field
 
 ## Generation
 

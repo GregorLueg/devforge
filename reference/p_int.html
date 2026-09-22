@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">devforge</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,6 +53,7 @@
 <span>  range <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  null_ok <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  len <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>  integerish <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  check_as <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  doc <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -63,7 +64,8 @@
 
 
 <dl><dt id="arg-default">default<a class="anchor" aria-label="anchor" href="#arg-default"></a></dt>
-<dd><p>Integer or <code>NULL</code>. The default value.</p></dd>
+<dd><p>Integer or <code>NULL</code>. The default value. Leave it out for a
+formal the caller must supply.</p></dd>
 
 
 <dt id="arg-range">range<a class="anchor" aria-label="anchor" href="#arg-range"></a></dt>
@@ -77,6 +79,12 @@
 <dt id="arg-len">len<a class="anchor" aria-label="anchor" href="#arg-len"></a></dt>
 <dd><p>Integer or string. <code>1L</code> for a scalar, <code>"+"</code> for one or more.
 Defaults to <code>1L</code>.</p></dd>
+
+
+<dt id="arg-integerish">integerish<a class="anchor" aria-label="anchor" href="#arg-integerish"></a></dt>
+<dd><p>Boolean. Accept whole doubles such as <code>1000</code> as well
+(<code>"X"</code> rather than <code>"I"</code>). Pair it with an <code><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer()</a></code> in <code>extra_ctor</code>
+when downstream code needs a real integer. Defaults to <code>FALSE</code>.</p></dd>
 
 
 <dt id="arg-check-as">check_as<a class="anchor" aria-label="anchor" href="#arg-check-as"></a></dt>

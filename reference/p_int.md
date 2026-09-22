@@ -10,6 +10,7 @@ p_int(
   range = NULL,
   null_ok = FALSE,
   len = 1L,
+  integerish = FALSE,
   check_as = NULL,
   doc = NULL
 )
@@ -19,7 +20,8 @@ p_int(
 
 - default:
 
-  Integer or `NULL`. The default value.
+  Integer or `NULL`. The default value. Leave it out for a formal the
+  caller must supply.
 
 - range:
 
@@ -33,6 +35,13 @@ p_int(
 
   Integer or string. `1L` for a scalar, `"+"` for one or more. Defaults
   to `1L`.
+
+- integerish:
+
+  Boolean. Accept whole doubles such as `1000` as well (`"X"` rather
+  than `"I"`). Pair it with an
+  [`as.integer()`](https://rdrr.io/r/base/integer.html) in `extra_ctor`
+  when downstream code needs a real integer. Defaults to `FALSE`.
 
 - check_as:
 

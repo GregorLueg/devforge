@@ -14,7 +14,8 @@ p_free(default, doc = NULL)
 
 - default:
 
-  Any. The default value.
+  Any. The default value. Leave it out for a formal the caller must
+  supply.
 
 - doc:
 

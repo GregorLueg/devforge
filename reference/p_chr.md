@@ -12,7 +12,8 @@ p_chr(default, null_ok = FALSE, len = 1L, doc = NULL)
 
 - default:
 
-  String or `NULL`. The default value.
+  String or `NULL`. The default value. Leave it out for a formal the
+  caller must supply.
 
 - null_ok:
 

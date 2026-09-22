@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="index.html">devforge</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -87,8 +87,20 @@
 <span>    p <span class="op">=</span> <span class="fu"><a href="reference/p_int.html">p_int</a></span><span class="op">(</span><span class="fl">5L</span>, range <span class="op">=</span> <span class="st">"[1,)"</span>, doc <span class="op">=</span> <span class="st">"Number of steps for the kernel."</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Specs live in <code>inst/params/*.R</code>. Then:</p>
+<p>Shared defaults blocks are merged rather than repeated. A <code><a href="reference/p_merge.html">p_merge()</a></code> field takes the caller’s overrides, layers them over <code>params_knn_defaults()</code> and splices the result flat into the returned list. The checker picks up the spliced elements and their rules from the base spec:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">spec_umap</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/param_spec.html">param_spec</a></span><span class="op">(</span></span>
+<span>  name <span class="op">=</span> <span class="st">"umap"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Wrapper function for the UMAP parameters"</span>,</span>
+<span>  checker <span class="op">=</span> <span class="st">"Umap"</span>,</span>
+<span>  fields <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    n_epochs <span class="op">=</span> <span class="fu"><a href="reference/p_int.html">p_int</a></span><span class="op">(</span>range <span class="op">=</span> <span class="st">"[1,)"</span>, integerish <span class="op">=</span> <span class="cn">TRUE</span>, doc <span class="op">=</span> <span class="st">"Epochs."</span><span class="op">)</span>,</span>
+<span>    knn <span class="op">=</span> <span class="fu"><a href="reference/p_merge.html">p_merge</a></span><span class="op">(</span><span class="st">"knn_defaults"</span>, doc <span class="op">=</span> <span class="st">"Overrides for the kNN search."</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Leave the default out of a field and the formal is required. <code>integerish</code> accepts the <code>1000</code> a user types without the <code>L</code>.</p>
+<p>Specs live in <code>inst/params/*.R</code>. Then:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devforge</span><span class="fu">::</span><span class="fu"><a href="reference/forge_params.html">forge_params</a></span><span class="op">(</span><span class="st">"."</span><span class="op">)</span>      <span class="co"># writes R/*-generated.R and runs air</span></span>
 <span><span class="fu">devforge</span><span class="fu">::</span><span class="fu"><a href="reference/params_up_to_date.html">params_up_to_date</a></span><span class="op">(</span><span class="st">"."</span><span class="op">)</span> <span class="co"># the CI drift guard</span></span></code></pre></div>
 <p>See <code><a href="articles/params.html">vignette("params")</a></code> for the escape hatches and the migration recipe.</p>
@@ -97,7 +109,7 @@
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <p>Simplest is to install from R-universe:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span></span>
 <span>  <span class="st">"devforge"</span>,</span>
 <span>  repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"https://gregorlueg.r-universe.dev"</span>, <span class="st">"https://cloud.r-project.org"</span><span class="op">)</span></span>

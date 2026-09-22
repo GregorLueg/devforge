@@ -7,7 +7,7 @@ pattern at all.
 ## Usage
 
 ``` r
-spec_qtest_rules(spec)
+spec_qtest_rules(spec, specs = list())
 ```
 
 ## Arguments
@@ -15,6 +15,11 @@ spec_qtest_rules(spec)
 - spec:
 
   A `devforge_spec`.
+
+- specs:
+
+  Named list of `devforge_spec` objects that merged fields may refer to.
+  Defaults to an empty list.
 
 ## Value
 

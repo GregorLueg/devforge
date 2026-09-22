@@ -11,7 +11,7 @@ here."><meta property="og:image" content="https://gregorlueg.github.io/devforge/
 
     <a class="navbar-brand me-2" href="../index.html">devforge</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -99,8 +99,9 @@ to <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-details">details<a class="anchor" aria-label="anchor" href="#arg-details"></a></dt>
-<dd><p>String or <code>NULL</code>. Roxygen <code>@details</code> prose, emitted verbatim
-so it can carry its own <code>\itemize{}</code>. Defaults to <code>NULL</code>.</p></dd>
+<dd><p>String or <code>NULL</code>. Roxygen <code>@details</code> prose. Line breaks are
+kept so it can carry its own <code>\itemize{}</code>, and lines over the width are
+wrapped. Defaults to <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-references">references<a class="anchor" aria-label="anchor" href="#arg-references"></a></dt>
