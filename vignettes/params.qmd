@@ -120,6 +120,79 @@ p_choice("kmknn", c("hnsw", "kmknn", "annoy"))$choices
 formal, a default and its roxygen, and nothing else. Pair it with an
 `extra_check`.
 
+Leave the default out and the formal becomes required. The roxygen says
+`Required.` instead of `Defaults to`, and the constructor fails the way any R
+function does when the caller forgets it. `integerish = TRUE` swaps the `"I"`
+for an `"X"`, for the `n_epochs = 1000` a user types without the `L`:
+
+```{r}
+#| label: required
+devforge:::field_qassert(p_int(range = "[1,)", integerish = TRUE))
+p_int(range = "[1,)")$required
+```
+
+# Merging a shared defaults block
+
+Half the constructors in a single cell package take the same kNN block. A
+`param_defaults()` spec holds it once:
+
+```{r}
+#| label: defaults
+knn <- param_defaults(
+  name = "knn_defaults",
+  title = "Default parameters for the kNN search",
+  checker = "Knn",
+  label = "kNN parameters",
+  fields = list(
+    k = p_int(15L, range = "[1,)", doc = "Number of neighbours."),
+    metric = p_choice(
+      "euclidean",
+      c("euclidean", "cosine"),
+      doc = "Distance metric."
+    )
+  )
+)
+```
+
+A `p_merge()` field on another spec takes the caller's overrides as a list. The
+constructor layers them over `params_knn_defaults()`, then over any
+constructor-specific `overrides`, and splices the result flat into the returned
+list at the field's position:
+
+```{r}
+#| label: merge
+spec_umap <- param_spec(
+  name = "umap",
+  title = "Wrapper function for the UMAP parameters",
+  checker = "Umap",
+  label = "UMAP parameters",
+  fields = list(
+    n_epochs = p_int(range = "[1,)", integerish = TRUE, doc = "Epochs."),
+    min_dist = p_dbl(0.1, range = "(0,1]", doc = "Minimum distance."),
+    knn = p_merge(
+      "knn_defaults",
+      overrides = list(k = 30L),
+      doc = "Overrides for the kNN search."
+    )
+  )
+)
+cat(devforge:::emit_ctor(spec_umap), sep = "\n")
+```
+
+The checker follows the merge. `checkUmapParams()` requires `k` and `metric`
+alongside the two plain fields and validates them with the rules of the
+`knn_defaults` spec, so nobody writes a second rule table for the same block:
+
+```{r}
+#| label: merge-checker
+cat(devforge:::emit_checker(spec_umap, list(knn_defaults = knn)), sep = "\n")
+```
+
+`from` and `overrides` can also be language objects. They are evaluated inside
+the constructor and may reference the other formals, for a base that depends on
+`neighbours_within_batch` say. A language `from` contributes nothing to the
+checker, since there is no spec to take rules from.
+
 # Running it
 
 Specs live in `inst/params/*.R`. They ship, so one package can reference
