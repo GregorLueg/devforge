@@ -53,6 +53,7 @@ reference:
       - p_chr
       - p_choice
       - p_free
+      - p_merge
   # Generation
   - title: Generation
     desc: Writing the generated files and keeping them honest
