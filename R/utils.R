@@ -46,6 +46,36 @@ deparse_value <- function(x) {
   src
 }
 
+#' Source for a numeric default that survives the trip through roxygen
+#'
+#' @description roxygen writes the Rd `\usage` by deparsing the default it
+#' parsed out of the generated source, and `R CMD check`'s codoc then compares
+#' the two renderings. For nearly every value `deparse()` is a fixed point and
+#' the literal can stand as it is. It is not one for a value like `1e-300`,
+#' where 15 significant digits are too few: `deparse()` gives
+#' `9.99999999999999e-301`, deparsing that again gives
+#' `9.99999998481683e-301`, and codoc reports a mismatch. There the literal is
+#' wrapped in `as.numeric()`, which keeps the exact value and leaves roxygen a
+#' call to print verbatim.
+#'
+#' @param x The default value.
+#' @param src String. The literal [deparse_value()] produced for it.
+#'
+#' @returns String. R source for the right hand side of the formal.
+#'
+#' @keywords internal
+stable_number_src <- function(x, src) {
+  checkmate::qassert(src, "S1")
+  if (!is.double(x) || length(x) != 1L || !is.finite(x)) {
+    return(src)
+  }
+  own <- deparse(x)
+  if (identical(deparse(as.numeric(own)), own)) {
+    return(src)
+  }
+  sprintf("as.numeric(%s)", deparse_value(deparse_number(x)))
+}
+
 #' The shortest literal that reads back as the same double
 #'
 #' @description `deparse()` stops at 15 significant digits, which turns
