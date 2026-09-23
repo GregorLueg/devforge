@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">devforge</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,6 +41,14 @@
       <small>Source: <a href="https://github.com/GregorLueg/devforge/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.5" id="devforge-005">devforge 0.0.5<a class="anchor" aria-label="anchor" href="#devforge-005"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-0-0-5">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-0-5"></a></h3>
+<ul><li>Numeric defaults that R’s own deparse() renders differently are emitted as <code>as.numeric("&lt;literal&gt;")</code>. roxygen deparses the default into the Rd <code>\usage</code>, and <code><a href="https://rdrr.io/r/base/deparse.html" class="external-link">deparse()</a></code> is not always a fixed point (<code>1e-300</code> becomes <code>9.99999999999999e-301</code>), so codoc flagged a mismatch.</li>
+<li>details lines that already fit the width are left as written. 0.0.4 reflowed every line and stripped the indentation from hand-written <code>\itemize{}</code> blocks.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.4" id="devforge-004">devforge 0.0.4<a class="anchor" aria-label="anchor" href="#devforge-004"></a></h2>
 <div class="section level3">
