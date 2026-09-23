@@ -1,3 +1,14 @@
+# devforge 0.0.5
+
+## Bug fixes
+
+- Numeric defaults that R's own deparse() renders differently are emitted as 
+  `as.numeric("<literal>")`. roxygen deparses the default into the Rd `\usage`, 
+  and `deparse()` is not always a fixed point (`1e-300` becomes 
+  `9.99999999999999e-301`), so codoc flagged a mismatch. 
+- details lines that already fit the width are left as written. 0.0.4 reflowed 
+  every line and stripped the indentation from hand-written `\itemize{}` blocks.
+
 # devforge 0.0.4
 
 ## Features
