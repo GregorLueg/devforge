@@ -42,9 +42,9 @@ field_formal_default <- function(field) {
   if (identical(field$type, "choice")) {
     deparse_value(field$choices)
   } else if (identical(field$type, "dbl")) {
-    deparse_double(field$default)
+    stable_number_src(field$default, deparse_double(field$default))
   } else {
-    deparse_value(field$default)
+    stable_number_src(field$default, deparse_value(field$default))
   }
 }
 
@@ -62,9 +62,9 @@ field_value_src <- function(field) {
   checkmate::assertClass(field, "devforge_field")
   value <- field_effective_default(field)
   if (identical(field$type, "dbl")) {
-    deparse_double(value)
+    stable_number_src(value, deparse_double(value))
   } else {
-    deparse_value(value)
+    stable_number_src(value, deparse_value(value))
   }
 }
 
@@ -278,7 +278,15 @@ emit_ctor_roxygen <- function(spec) {
       "#' @details",
       unlist(
         purrr::map(strsplit(spec$details, "\n", fixed = TRUE)[[1L]], \(line) {
-          if (nzchar(line)) wrap_roxygen(line, prefix = "#' ") else "#'"
+          # Only a line that would overflow is reflowed, so an \itemize{} block
+          # keeps the indentation it was written with.
+          if (!nzchar(line)) {
+            "#'"
+          } else if (nchar(line) + 3L <= 80L) {
+            paste0("#' ", line)
+          } else {
+            wrap_roxygen(line, prefix = "#' ")
+          }
         }),
         use.names = FALSE
       )
