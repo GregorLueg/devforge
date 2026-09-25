@@ -60,3 +60,4 @@ reference:
     contents:
       - forge_params
       - params_up_to_date
+      - use_drift_ci
