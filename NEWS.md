@@ -1,3 +1,10 @@
+# devforge 0.0.6
+
+## Features
+
+- `use_drift_ci()` drops the params drift workflow into `.github/workflows/`,
+  so a package using devforge specs fails CI when the generated files go stale.
+
 # devforge 0.0.5
 
 ## Bug fixes
