@@ -224,6 +224,18 @@ devforge::params_up_to_date(".")
 both a hand-edit of a generated file and a spec change that was never
 regenerated.
 
+Don't want to write the GitHub Actions workflow yourself? This drops one into
+`.github/workflows/params-drift.yml`:
+
+```r
+devforge::use_drift_ci(".")
+```
+
+The runner defaults to macOS. Pick the platform you forge the specs on:
+macOS arm64 R has no extended long double, so a literal like `1e-300` deparses
+differently than on Linux and every generated file reads as stale. Forging on
+Linux? Pass `runner = "ubuntu-latest"`.
+
 # What is next
 
 Three linters, each aimed at something the survey of the five packages turned up
