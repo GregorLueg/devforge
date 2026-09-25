@@ -4,10 +4,20 @@
 \alias{use_drift_ci}
 \title{Add the params drift workflow to a package}
 \usage{
-use_drift_ci(pkg = ".", overwrite = FALSE, .verbose = TRUE)
+use_drift_ci(
+  pkg = ".",
+  runner = "macos-latest",
+  overwrite = FALSE,
+  .verbose = TRUE
+)
 }
 \arguments{
 \item{pkg}{String. Path to the package root. Defaults to \code{"."}.}
+
+\item{runner}{String. The GitHub Actions runner. Has to match the platform
+the specs are forged on: macOS arm64 R has no extended long double, so
+literals like \code{1e-300} deparse differently than on Linux and every file
+reads as stale. Defaults to \code{"macos-latest"}.}
 
 \item{overwrite}{Boolean. Replace an existing workflow file. Defaults to
 \code{FALSE}.}
@@ -20,7 +30,6 @@ The path of the workflow file, invisibly.
 \description{
 Copies a GitHub Actions workflow into
 \code{.github/workflows/params-drift.yml} that installs devforge and fails the
-build when \code{\link[=params_up_to_date]{params_up_to_date()}} reports stale generated files. The runner
-is macOS, since that is where the specs get forged; see the comments in the
-workflow. Also adds \verb{^\\.github$} to \code{.Rbuildignore} if it is not there yet.
+build when \code{\link[=params_up_to_date]{params_up_to_date()}} reports stale generated files. Also adds
+\verb{^\\.github$} to \code{.Rbuildignore} if it is not there yet.
 }
