@@ -38,3 +38,5 @@ Writing the generated files and keeping them honest
   : Generate the parameter wrappers and their checkmate extensions
 - [`params_up_to_date()`](https://gregorlueg.github.io/devforge/reference/params_up_to_date.md)
   : Check whether the generated files match the specs
+- [`use_drift_ci()`](https://gregorlueg.github.io/devforge/reference/use_drift_ci.md)
+  : Add the params drift workflow to a package

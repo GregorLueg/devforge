@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">devforge</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,7 +70,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Generating parameter wrappers</h1>
 
       <p class="author">Gregor Lueg</p>
-      <p class="date">2026-09-23</p>
+      <p class="date">2026-09-25</p>
 
       <small class="dont-index">Source: <a href="https://github.com/GregorLueg/devforge/blob/main/vignettes/params.qmd" class="external-link"><code>vignettes/params.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
@@ -416,6 +416,10 @@
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devforge</span><span class="fu">::</span><span class="fu"><a href="../reference/params_up_to_date.html">params_up_to_date</a></span><span class="op">(</span><span class="st">"."</span><span class="op">)</span></span></code></pre></div>
 <p><code>TRUE</code> when everything matches, otherwise the paths that are stale. That catches both a hand-edit of a generated file and a spec change that was never regenerated.</p>
+<p>Don’t want to write the GitHub Actions workflow yourself? This drops one into <code>.github/workflows/params-drift.yml</code>:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">devforge</span><span class="fu">::</span><span class="fu"><a href="../reference/use_drift_ci.html">use_drift_ci</a></span><span class="op">(</span><span class="st">"."</span><span class="op">)</span></span></code></pre></div>
+<p>The runner defaults to macOS. Pick the platform you forge the specs on: macOS arm64 R has no extended long double, so a literal like <code>1e-300</code> deparses differently than on Linux and every generated file reads as stale. Forging on Linux? Pass <code>runner = "ubuntu-latest"</code>.</p>
 </section><section class="section level2"><h2 id="what-is-next">What is next<a class="anchor" aria-label="anchor" href="#what-is-next"></a>
 </h2>
 <p>Three linters, each aimed at something the survey of the five packages turned up rather than at a hypothetical: roxygen that has drifted away from the formals it documents, function inputs that never reach a <code>checkmate</code> call, and <code>rs_*</code> bindings without an R wrapper. Watch this space.</p>
