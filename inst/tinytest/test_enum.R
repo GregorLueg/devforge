@@ -196,7 +196,7 @@ expect_error(env$match_pca_solver("exact", exact = 1, .default = \(v) 2))
 # spec validation --------------------------------------------------------------
 
 expect_error(p_variant("x", variant = p_int(1L, doc = "Tag.")), "reserved")
-expect_error(p_variant("x", n = p_int(doc = "No default.")), "default")
+expect_error(p_variant("x", m = p_merge("knn", doc = "Merged.")), "p_merge")
 expect_error(
   param_enum("e", "e", variants = list(x = p_variant("x"))),
   "snake_case"
@@ -223,17 +223,100 @@ expect_error(
   "not a variant"
 )
 
-# packages without enums keep the old prelude
-expect_false(any(grepl(
-  "check_enum_value",
-  devforge:::render_specs(list(
-    scenic = param_spec(
-      name = "plain",
-      title = "plain",
-      fields = list(k = p_int(1L, doc = "K."))
+# enums go to their own file, params files only when there are specs
+expect_equal(names(rendered), c("prelude", "params", "checkers", "enums"))
+params_side <- c(rendered$prelude, rendered$params, rendered$checkers)
+expect_false(any(grepl("check_enum_value|pca_solver_exact", params_side)))
+expect_true(any(grepl("pca_solver_exact <-", rendered$enums, fixed = TRUE)))
+plain <- param_spec(
+  name = "plain",
+  title = "plain",
+  fields = list(k = p_int(1L, doc = "K."))
+)
+expect_equal(
+  names(devforge:::render_specs(list(plain = plain))),
+  c("prelude", "params", "checkers")
+)
+expect_equal(
+  names(devforge:::render_specs(list(pca_solver = pca_solver))),
+  "enums"
+)
+
+# enums beyond parameters ------------------------------------------------------
+
+# an outcome type: required payloads, a free field for whatever R object, and
+# a nested enum recording which solver produced it
+pca_outcome <- param_enum(
+  name = "pca_outcome",
+  title = "PCA outcome",
+  variants = list(
+    done = p_variant(
+      "The decomposition finished.",
+      scores = p_free(doc = "Cell x PC matrix."),
+      solver = p_enum("pca_solver", doc = "The solver that ran.")
+    ),
+    skipped = p_variant(
+      "Nothing to decompose.",
+      reason = p_chr(doc = "Why."),
+      n_cells = p_int(0L, range = "[0,)", doc = "Cells seen.")
     )
-  ))$prelude
-)))
+  )
+)
+general <- devforge:::render_specs(list(
+  pca_outcome = pca_outcome,
+  pca_solver = pca_solver
+))
+expect_true(all(nchar(general$enums) <= 80L))
+genv <- new.env(parent = globalenv())
+eval(parse(text = general$enums), envir = genv)
+
+scores <- matrix(rnorm(6), 3, 2)
+done <- genv$pca_outcome_done(scores, solver = "randomised")
+expect_identical(done$scores, scores)
+expect_equal(done$solver$oversample, 10L)
+expect_equal(class(done$solver)[[2L]], "PcaSolver")
+expect_true(genv$checkPcaOutcome(done))
+
+# required fields have no default to fall back on
+expect_error(genv$pca_outcome_done(scores))
+expect_error(genv$pca_outcome_skipped())
+expect_error(genv$as_pca_outcome("done"), "pca_outcome_done")
+
+# the nested enum is checked with its own checker
+done$solver$n_iter <- -1L
+expect_true(grepl("`solver`", genv$checkPcaOutcome(done)))
+
+# a free field is only required to be present
+done <- genv$pca_outcome_done(data.frame(a = 1), solver = "exact")
+expect_true(genv$checkPcaOutcome(done))
+done$scores <- NULL
+expect_false(isTRUE(genv$checkPcaOutcome(done)))
+
+expect_equal(
+  genv$match_pca_outcome(
+    genv$pca_outcome_skipped("no HVGs"),
+    done = \(v) ncol(v$scores),
+    skipped = \(v) v$reason
+  ),
+  "no HVGs"
+)
+
+# a nested default that cannot be built from its name is caught
+bad_nested <- param_enum(
+  name = "wrapper",
+  title = "wrapper",
+  variants = list(
+    one = p_variant("One.", inner = p_enum("pca_outcome", "done", doc = "X."))
+  )
+)
+expect_error(
+  devforge:::render_specs(list(
+    pca_outcome = pca_outcome,
+    wrapper = bad_nested,
+    pca_solver = pca_solver
+  )),
+  "can be built from its name"
+)
 
 # impl blocks ------------------------------------------------------------------
 
@@ -298,7 +381,11 @@ write(
 paths <- forge_params(pkg, .verbose = FALSE)
 expect_true(isTRUE(params_up_to_date(pkg)))
 
-generated <- readLines(file.path(pkg, "R", "params-generated.R"))
+# an enum-only package gets the enums file and nothing else
+expect_equal(basename(paths), "enums-generated.R")
+expect_false(file.exists(file.path(pkg, "R", "params-generated.R")))
+
+generated <- readLines(file.path(pkg, "R", "enums-generated.R"))
 expect_equal(sum(grepl('UseMethod("describe")', generated, fixed = TRUE)), 1L)
 
 env <- new.env(parent = globalenv())
@@ -312,5 +399,22 @@ expect_true(evalq(is_exact(as_pca_solver("exact")), env))
 expect_equal(evalq(describe(pca_solver_covariance()), env), "covariance")
 expect_equal(evalq(describe(generator_modular()), env), "modular")
 expect_equal(evalq(describe(generator_gamma()), env), "other")
+
+# dropping the last enum leaves an orphan that the drift guard flags and the
+# next forge removes
+writeLines(
+  c(
+    'spec_plain <- param_spec(',
+    '  name = "plain",',
+    '  title = "plain",',
+    '  fields = list(k = p_int(1L, doc = "K."))',
+    ')'
+  ),
+  file.path(pkg, "inst", "params", "enums.R")
+)
+expect_true("R/enums-generated.R" %in% params_up_to_date(pkg))
+forge_params(pkg, .verbose = FALSE)
+expect_false(file.exists(file.path(pkg, "R", "enums-generated.R")))
+expect_true(isTRUE(params_up_to_date(pkg)))
 
 unlink(pkg, recursive = TRUE)

@@ -24,6 +24,8 @@ navbar:
       menu:
         - text: Generating parameter wrappers
           href: articles/params.html
+        - text: Rust style enums
+          href: articles/enums.html
     github:
       icon: fab fa-github
       href: https://github.com/GregorLueg/devforge
@@ -34,6 +36,7 @@ articles:
     navbar: Articles
     contents:
       - params
+      - enums
 
 reference:
   # Writing a spec

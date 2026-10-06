@@ -2,7 +2,7 @@
 % Please edit documentation in R/emit_enum.R
 \name{emit_enum}
 \alias{emit_enum}
-\title{Everything a package's enum emits into the parameter file}
+\title{Everything one enum emits}
 \usage{
 emit_enum(enum)
 }
@@ -13,6 +13,6 @@ emit_enum(enum)
 Character vector of R source lines.
 }
 \description{
-Everything a package's enum emits into the parameter file
+Everything one enum emits
 }
 \keyword{internal}

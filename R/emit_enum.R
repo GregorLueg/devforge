@@ -1,5 +1,70 @@
 # enum emission ----------------------------------------------------------------
 
+## helper ----------------------------------------------------------------------
+
+# Emitted at the top of R/enums-generated.R. Self-contained, so the enums file
+# works without the params prelude in a package that has no params specs.
+ENUM_HELPER_SOURCE <- '#\' Check a tagged enum value
+#\'
+#\' @description Verifies that `x` is a list whose `variant` is one of
+#\' `names(variants)` and whose other names are exactly that variant\'s fields,
+#\' then validates the fields with their qtest patterns, choice sets and the
+#\' checkers of nested enums.
+#\'
+#\' @param x The object to check.
+#\' @param variants Named list, one entry per variant, each a list with
+#\' `fields` (character vector) and optionally `rules` (named list of qtest
+#\' patterns), `choices` (named list of allowed values) and `enums` (named list
+#\' of checker functions).
+#\' @param label Short human-readable label used in the error message.
+#\'
+#\' @returns `TRUE` if the check was successful, otherwise a checkmate-style
+#\' error string.
+#\'
+#\' @keywords internal
+check_enum_value <- function(x, variants, label) {
+  res <- checkmate::checkList(x)
+  if (!isTRUE(res)) {
+    return(res)
+  }
+  res <- checkmate::checkChoice(x[["variant"]], names(variants))
+  if (!isTRUE(res)) {
+    return(sprintf("The `variant` of %s is invalid: %s", label, res))
+  }
+  spec <- variants[[x[["variant"]]]]
+  label <- sprintf("%s variant `%s`", label, x[["variant"]])
+  res <- checkmate::checkSetEqual(names(x), c("variant", spec$fields))
+  if (!isTRUE(res)) {
+    return(sprintf("The names of %s are invalid: %s", label, res))
+  }
+  for (name in names(spec$rules)) {
+    if (!checkmate::qtest(x[[name]], spec$rules[[name]])) {
+      return(sprintf("The element `%s` in %s is invalid.", name, label))
+    }
+  }
+  for (name in names(spec$choices)) {
+    if (!checkmate::testChoice(x[[name]], spec$choices[[name]])) {
+      return(sprintf(
+        "The element `%s` in %s is not one of the expected choices.",
+        name,
+        label
+      ))
+    }
+  }
+  for (name in names(spec$enums)) {
+    res <- spec$enums[[name]](x[[name]])
+    if (!isTRUE(res)) {
+      return(sprintf(
+        "The element `%s` in %s is invalid. %s",
+        name,
+        label,
+        res
+      ))
+    }
+  }
+  TRUE
+}'
+
 ## constructors ----------------------------------------------------------------
 
 #' A generated variant constructor
@@ -100,9 +165,10 @@ emit_variant_ctor <- function(enum, variant) {
 
 #' A generated `as_<enum>()` coercion
 #'
-#' @description A variant name becomes that variant with its defaults. A list
-#' is checked and gets its class rebuilt from `variant`, which `c()`,
-#' `unclass()` or a trip through Rust or serialisation may have dropped.
+#' @description A variant name becomes that variant with its defaults, or an
+#' error for a variant with required fields. A list is checked and gets its
+#' class rebuilt from `variant`, which `c()`, `unclass()` or a trip through
+#' Rust or serialisation may have dropped.
 #'
 #' @param enum A `devforge_enum`.
 #'
@@ -114,6 +180,13 @@ emit_enum_as <- function(enum) {
   variants <- names(enum$variants)
   fn_name <- paste0("as_", enum$name)
   classes <- purrr::map_chr(variants, \(v) variant_class(enum, v))
+  arms <- purrr::map_chr(variants, \(v) {
+    if (variant_from_name(enum, v)) {
+      sprintf("%s = %s_%s()", v, enum$name, v)
+    } else {
+      sprintf("%s = stop(\"Build `%s` with %s_%s().\")", v, v, enum$name, v)
+    }
+  })
   choice <- prefix_first(
     "checkmate::assertChoice(x, ",
     emit_char_vector(variants, budget = 44L)
@@ -124,8 +197,9 @@ emit_enum_as <- function(enum) {
     "#'",
     wrap_roxygen(
       paste(
-        "A variant name becomes that variant with its defaults. A list is",
-        "checked and gets its class rebuilt from its `variant` element."
+        "A variant name becomes that variant with its defaults, as long as",
+        "it carries no required fields. A list is checked and gets its class",
+        "rebuilt from its `variant` element."
       ),
       prefix = "#' @description "
     ),
@@ -150,10 +224,7 @@ emit_enum_as <- function(enum) {
         "return(switch(",
         indent(c(
           "x,",
-          paste0(
-            sprintf("%s = %s_%s()", variants, enum$name, variants),
-            c(rep(",", length(variants) - 1L), "")
-          )
+          paste0(arms, c(rep(",", length(variants) - 1L), ""))
         )),
         "))"
       )),
@@ -263,7 +334,7 @@ emit_enum_match <- function(enum) {
   )
 }
 
-#' Everything a package's enum emits into the parameter file
+#' Everything one enum emits
 #'
 #' @param enum A `devforge_enum`.
 #'
@@ -276,11 +347,37 @@ emit_enum <- function(enum) {
     c(emit_variant_ctor(enum, v), "")
   })
   c(
+    section_header(enum$name),
+    "",
     unlist(ctors, use.names = FALSE),
     emit_enum_as(enum),
     "",
     emit_enum_match(enum),
+    "",
+    emit_enum_checker(enum),
     ""
+  )
+}
+
+#' The source of `R/enums-generated.R`
+#'
+#' @param enums List of `devforge_enum` objects.
+#'
+#' @returns Character vector of R source lines, without the generated header.
+#'
+#' @keywords internal
+emit_enums_file <- function(enums) {
+  checkmate::assertList(enums, types = "devforge_enum", min.len = 1L)
+  generics <- emit_enum_generics(enums)
+  c(
+    section_header("enum helper"),
+    "",
+    strsplit(ENUM_HELPER_SOURCE, "\n", fixed = TRUE)[[1L]],
+    "",
+    unlist(purrr::map(enums, emit_enum), use.names = FALSE),
+    if (length(generics) > 0L) {
+      c(section_header("enum methods"), "", generics)
+    }
   )
 }
 
@@ -288,8 +385,9 @@ emit_enum <- function(enum) {
 
 #' A generated `check<Enum>()` and its assertion sibling
 #'
-#' @description Delegates to the prelude's `check_enum_value()` with a table of
-#' the fields, qtest patterns and choice sets per variant.
+#' @description Delegates to the emitted `check_enum_value()` with a table of
+#' the fields, qtest patterns, choice sets and nested enum checkers per
+#' variant. Free fields are only required to be present.
 #'
 #' @param enum A `devforge_enum`.
 #'
@@ -305,20 +403,37 @@ emit_enum_checker <- function(enum) {
     if (length(fields) == 0L) {
       return(sprintf("%s = list(fields = character(0))", name))
     }
-    is_choice <- purrr::map_lgl(fields, \(f) identical(f$type, "choice"))
+    type <- purrr::map_chr(fields, \(f) f$type)
     parts <- list(prefix_first(
       "fields = ",
       emit_char_vector(names(fields), budget = 56L)
     ))
-    if (any(!is_choice)) {
-      rules <- purrr::map(fields[!is_choice], field_qassert, for_check = TRUE)
+    rules <- purrr::map(
+      fields[!type %in% c("choice", "enum", "free")],
+      field_qassert,
+      for_check = TRUE
+    )
+    if (length(rules) > 0L) {
       parts <- c(parts, list(prefix_first("rules = ", emit_rules_list(rules))))
     }
-    if (any(is_choice)) {
-      choices <- purrr::map(fields[is_choice], \(f) f$choices)
+    if (any(type == "choice")) {
+      choices <- purrr::map(fields[type == "choice"], \(f) f$choices)
       parts <- c(
         parts,
         list(prefix_first("choices = ", emit_rules_list(choices)))
+      )
+    }
+    if (any(type == "enum")) {
+      nested <- purrr::imap_chr(fields[type == "enum"], \(f, name) {
+        sprintf("%s = check%s", name, to_pascal_case(f$enum))
+      })
+      parts <- c(
+        parts,
+        list(c(
+          "enums = list(",
+          indent(paste0(nested, c(rep(",", length(nested) - 1L), ""))),
+          ")"
+        ))
       )
     }
     parts <- purrr::imap(parts, \(p, i) {
@@ -534,6 +649,10 @@ check_enum_methods <- function(pkg, enums) {
 
 #' Check that every enum field points at a known enum and variant
 #'
+#' @description Covers the fields of the specs and the payloads of the enums'
+#' own variants. A default has to name a variant that can be built from its
+#' name alone.
+#'
 #' @param specs List of `devforge_spec` objects.
 #' @param enums Named list of `devforge_enum` objects.
 #'
@@ -543,25 +662,51 @@ check_enum_methods <- function(pkg, enums) {
 assert_enum_refs <- function(specs, enums) {
   checkmate::assertList(specs, types = "devforge_spec")
   checkmate::assertList(enums, types = "devforge_enum")
-  purrr::walk(specs, \(s) {
-    purrr::iwalk(s$fields, \(f, name) {
+  owners <- c(
+    purrr::map(specs, \(s) {
+      list(where = sprintf("spec `%s`", s$name), fields = s$fields)
+    }),
+    unlist(
+      purrr::map(enums, \(e) {
+        purrr::imap(e$variants, \(v, vname) {
+          list(
+            where = sprintf("enum `%s_%s`", e$name, vname),
+            fields = v$fields
+          )
+        })
+      }),
+      recursive = FALSE,
+      use.names = FALSE
+    )
+  )
+  purrr::walk(owners, \(o) {
+    purrr::iwalk(o$fields, \(f, name) {
       if (!identical(f$type, "enum")) {
         return(NULL)
       }
       enum <- enums[[f$enum]]
       if (is.null(enum)) {
         stop(sprintf(
-          "Field `%s` of spec `%s` refers to enum `%s`, which is not defined.",
+          "Field `%s` of %s refers to enum `%s`, which is not defined.",
           name,
-          s$name,
+          o$where,
           f$enum
         ))
       }
-      if (!f$default %in% names(enum$variants)) {
+      if (f$required) {
+        return(NULL)
+      }
+      ok <- f$default %in%
+        names(enum$variants) &&
+        variant_from_name(enum, f$default)
+      if (!ok) {
         stop(sprintf(
-          "Field `%s` of spec `%s` defaults to `%s`, not a variant of `%s`.",
+          paste(
+            "Field `%s` of %s defaults to `%s`, not a variant of `%s` that",
+            "can be built from its name."
+          ),
           name,
-          s$name,
+          o$where,
           f$default,
           f$enum
         ))

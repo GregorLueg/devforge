@@ -15,6 +15,8 @@ assert_enum_refs(specs, enums)
 \code{TRUE}, invisibly. Errors otherwise.
 }
 \description{
-Check that every enum field points at a known enum and variant
+Covers the fields of the specs and the payloads of the enums'
+own variants. A default has to name a variant that can be built from its
+name alone.
 }
 \keyword{internal}

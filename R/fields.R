@@ -338,13 +338,15 @@ p_merge <- function(from, default = list(), overrides = NULL, doc = NULL) {
 
 #' Enum field
 #'
-#' @description Takes a variant of a [param_enum()]. The generated formal
-#' defaults to the variant name, so callers can keep passing a string, and the
-#' constructor coerces it with the enum's `as_<name>()`. The returned list
-#' always carries the full tagged variant.
+#' @description Takes a variant of a [param_enum()], in a [param_spec()] or as
+#' the payload of another enum's variant. The generated formal defaults to the
+#' variant name, so callers can keep passing a string, and the generated
+#' function coerces it with the enum's `as_<name>()`. The returned list always
+#' carries the full tagged variant.
 #'
 #' @param enum String. The name of a [param_enum()] in the same package.
-#' @param default String. The default variant.
+#' @param default String. The default variant, which must carry no required
+#' fields. Leave it out for a formal the caller must supply.
 #' @param doc String or `NULL`. Roxygen prose for this field.
 #'
 #' @returns A `devforge_field`.
@@ -352,15 +354,24 @@ p_merge <- function(from, default = list(), overrides = NULL, doc = NULL) {
 #' @export
 p_enum <- function(enum, default, doc = NULL) {
   checkmate::qassert(enum, "S1")
-  checkmate::qassert(default, "S1")
-  new_field(type = "enum", default = default, enum = enum, doc = doc)
+  if (!missing(default)) {
+    checkmate::qassert(default, "S1")
+  }
+  new_field(
+    type = "enum",
+    default = if (missing(default)) NULL else default,
+    enum = enum,
+    required = missing(default),
+    doc = doc
+  )
 }
 
 #' Enum variant
 #'
-#' @description One variant of a [param_enum()] and the fields it carries.
-#' Every field needs a default, so that the variant can be built from its name
-#' alone. `"merge"`, `"enum"` and `"free"` fields are not supported.
+#' @description One variant of a [param_enum()] and the fields it carries. Any
+#' field type but [p_merge()] works: [p_free()] for a matrix or a
+#' `data.table`, [p_enum()] for a nested enum. A variant whose fields all have
+#' defaults can also be built from its name alone, e.g. by `as_<enum>()`.
 #'
 #' @param doc String. Roxygen prose for the variant.
 #' @param ... Named [p_int()] and friends. The variant's payload. Leave empty
@@ -375,12 +386,10 @@ p_variant <- function(doc, ...) {
   if (length(fields) > 0L) {
     assert_fields(fields)
   }
-  bad <- names(fields)[purrr::map_lgl(fields, \(f) {
-    f$type %in% c("merge", "enum", "free") || f$required
-  })]
+  bad <- names(fields)[purrr::map_lgl(fields, \(f) identical(f$type, "merge"))]
   if (length(bad) > 0L) {
     stop(sprintf(
-      "Variant fields must be typed and carry a default: %s.",
+      "Variant fields cannot be `p_merge()` fields: %s.",
       paste(bad, collapse = ", ")
     ))
   }

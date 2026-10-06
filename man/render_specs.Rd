@@ -11,8 +11,9 @@ render_specs(specs)
 from \code{\link[=load_specs]{load_specs()}}.}
 }
 \value{
-A named list of character vectors, one per entry of
-\code{GENERATED_FILES}, without the generated header.
+A named list of character vectors, keyed like \code{GENERATED_FILES},
+without the generated header. The three params files only when there are
+specs, the enums file only when there are enums.
 }
 \description{
 Render specs into the source of the generated files

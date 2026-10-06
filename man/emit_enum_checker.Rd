@@ -13,7 +13,8 @@ emit_enum_checker(enum)
 Character vector of R source lines, roxygen included.
 }
 \description{
-Delegates to the prelude's \code{check_enum_value()} with a table of
-the fields, qtest patterns and choice sets per variant.
+Delegates to the emitted \code{check_enum_value()} with a table of
+the fields, qtest patterns, choice sets and nested enum checkers per
+variant. Free fields are only required to be present.
 }
 \keyword{internal}

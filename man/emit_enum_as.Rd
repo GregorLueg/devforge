@@ -13,8 +13,9 @@ emit_enum_as(enum)
 Character vector of R source lines, roxygen included.
 }
 \description{
-A variant name becomes that variant with its defaults. A list
-is checked and gets its class rebuilt from \code{variant}, which \code{c()},
-\code{unclass()} or a trip through Rust or serialisation may have dropped.
+A variant name becomes that variant with its defaults, or an
+error for a variant with required fields. A list is checked and gets its
+class rebuilt from \code{variant}, which \code{c()}, \code{unclass()} or a trip through
+Rust or serialisation may have dropped.
 }
 \keyword{internal}

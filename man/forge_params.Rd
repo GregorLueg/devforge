@@ -15,8 +15,10 @@ forge_params(pkg = ".", .verbose = TRUE)
 Character vector of the paths written, invisibly.
 }
 \description{
-Reads every spec under \verb{inst/params/}, writes the three
-generated files under \verb{R/} and formats them with air. The generated files
-are meant to be committed. Errors when an enum method lacks an
-implementation for some variant, see \code{\link[=param_enum]{param_enum()}}.
+Reads every spec and enum under \verb{inst/params/}, writes the
+generated files under \verb{R/} and formats them with air: the three params files
+when there are specs, \code{R/enums-generated.R} when there are enums. A
+generated file whose specs are all gone is removed. The generated files are
+meant to be committed. Errors when an enum method lacks an implementation
+for some variant, see \code{\link[=param_enum]{param_enum()}}.
 }

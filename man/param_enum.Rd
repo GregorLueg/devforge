@@ -34,6 +34,8 @@ A Rust style enum: a fixed set of variants, each carrying its
 own fields. The generator emits one constructor per variant
 (\verb{<name>_<variant>()}), a coercion \verb{as_<name>()}, an exhaustive
 \verb{match_<name>()}, a checkmate extension and one S3 generic per entry of
-\code{methods}. A value is a list holding \code{variant} plus that variant's fields,
-with class \code{c("<Enum>_<Variant>", "<Enum>", "list")}.
+\code{methods}, all into \code{R/enums-generated.R}. A value is a list holding
+\code{variant} plus that variant's fields, with class
+\code{c("<Enum>_<Variant>", "<Enum>", "list")}. Enums stand on their own; a
+\code{\link[=param_spec]{param_spec()}} field takes one via \code{\link[=p_enum]{p_enum()}}.
 }

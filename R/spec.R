@@ -185,8 +185,10 @@ param_defaults <- function(
 #' own fields. The generator emits one constructor per variant
 #' (`<name>_<variant>()`), a coercion `as_<name>()`, an exhaustive
 #' `match_<name>()`, a checkmate extension and one S3 generic per entry of
-#' `methods`. A value is a list holding `variant` plus that variant's fields,
-#' with class `c("<Enum>_<Variant>", "<Enum>", "list")`.
+#' `methods`, all into `R/enums-generated.R`. A value is a list holding
+#' `variant` plus that variant's fields, with class
+#' `c("<Enum>_<Variant>", "<Enum>", "list")`. Enums stand on their own; a
+#' [param_spec()] field takes one via [p_enum()].
 #'
 #' @param name String. Snake case stem. `"pca_solver"` gives
 #' `pca_solver_<variant>()`, `as_pca_solver()`, `match_pca_solver()` and the
@@ -255,6 +257,20 @@ variant_class <- function(enum, variant) {
   paste0(enum$class, "_", to_pascal_case(variant))
 }
 
+#' Whether a variant can be built from its name alone
+#'
+#' @param enum A `devforge_enum`.
+#' @param variant String. The variant name.
+#'
+#' @returns Boolean. `TRUE` when none of the variant's fields is required.
+#'
+#' @keywords internal
+variant_from_name <- function(enum, variant) {
+  checkmate::assertClass(enum, "devforge_enum")
+  checkmate::qassert(variant, "S1")
+  !any(purrr::map_lgl(enum$variants[[variant]]$fields, \(f) f$required))
+}
+
 #' Validate a named list of fields
 #'
 #' @param fields Named list of `devforge_field` objects.
@@ -308,7 +324,10 @@ load_specs <- function(pkg = ".") {
     inherits(x, c("devforge_spec", "devforge_enum"))
   })]
   if (length(specs) == 0L) {
-    stop(sprintf("No `param_spec()` objects found in `%s`.", spec_dir))
+    stop(sprintf(
+      "No `param_spec()` or `param_enum()` objects found in `%s`.",
+      spec_dir
+    ))
   }
   names(specs) <- purrr::map_chr(specs, \(x) x$name)
   duplicated_names <- names(specs)[duplicated(names(specs))]

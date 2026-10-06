@@ -16,7 +16,8 @@ for a variant that carries nothing.}
 A list of class \code{devforge_variant}.
 }
 \description{
-One variant of a \code{\link[=param_enum]{param_enum()}} and the fields it carries.
-Every field needs a default, so that the variant can be built from its name
-alone. \code{"merge"}, \code{"enum"} and \code{"free"} fields are not supported.
+One variant of a \code{\link[=param_enum]{param_enum()}} and the fields it carries. Any
+field type but \code{\link[=p_merge]{p_merge()}} works: \code{\link[=p_free]{p_free()}} for a matrix or a
+\code{data.table}, \code{\link[=p_enum]{p_enum()}} for a nested enum. A variant whose fields all have
+defaults can also be built from its name alone, e.g. by \verb{as_<enum>()}.
 }
