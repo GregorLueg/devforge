@@ -18,3 +18,4 @@ Character vector of lines.
 The generated function, its checker and the fields with their
 types, defaults and ranges.
 }
+\keyword{internal}

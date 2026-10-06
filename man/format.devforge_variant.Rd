@@ -17,3 +17,4 @@ Character vector of lines.
 \description{
 Format a variant spec
 }
+\keyword{internal}

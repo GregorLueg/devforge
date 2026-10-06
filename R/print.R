@@ -12,6 +12,7 @@
 #'
 #' @returns String.
 #'
+#' @keywords internal
 #' @export
 format.devforge_field <- function(x, ...) {
   type <- switch(
@@ -97,6 +98,7 @@ format_braced <- function(head, fields, indent = 0L, trailer = "") {
 #'
 #' @returns Character vector of lines.
 #'
+#' @keywords internal
 #' @export
 format.devforge_enum <- function(x, ...) {
   variants <- purrr::imap(x$variants, \(v, name) {
@@ -131,6 +133,7 @@ format.devforge_enum <- function(x, ...) {
 #'
 #' @returns Character vector of lines.
 #'
+#' @keywords internal
 #' @export
 format.devforge_variant <- function(x, ...) {
   # A variant does not know its own name, the enum's names list holds it.
@@ -147,6 +150,7 @@ format.devforge_variant <- function(x, ...) {
 #'
 #' @returns Character vector of lines.
 #'
+#' @keywords internal
 #' @export
 format.devforge_spec <- function(x, ...) {
   kind <- if (x$defaults_only) "param_defaults" else "param_spec"

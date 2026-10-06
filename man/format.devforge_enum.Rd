@@ -18,3 +18,4 @@ Character vector of lines.
 Reads like the Rust declaration: \verb{enum PcaSolver \{ ... \}} with
 each variant under its \verb{///} doc line, plus the methods as an \code{impl} line.
 }
+\keyword{internal}
