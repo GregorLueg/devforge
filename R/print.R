@@ -177,6 +177,7 @@ format.devforge_spec <- function(x, ...) {
 #' @returns `x`, invisibly.
 #'
 #' @name print_devforge
+#' @keywords internal
 NULL
 
 #' Print the format() lines of an object
