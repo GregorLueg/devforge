@@ -1,3 +1,9 @@
+# devforge 0.0.7
+
+## Feature
+
+CLAUDE: ADD HERE
+
 # devforge 0.0.6
 
 ## Features
