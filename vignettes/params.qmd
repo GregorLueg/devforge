@@ -133,8 +133,8 @@ p_int(range = "[1,)")$required
 
 # Merging a shared defaults block
 
-Half the constructors in a single cell package take the same kNN block. A
-`param_defaults()` spec holds it once:
+Clustering, embeddings, graph methods: half the constructors in a package like
+that take the same kNN block. A `param_defaults()` spec holds it once:
 
 ```{r}
 #| label: defaults
@@ -189,8 +189,8 @@ cat(devforge:::emit_checker(spec_umap, list(knn_defaults = knn)), sep = "\n")
 ```
 
 `from` and `overrides` can also be language objects. They are evaluated inside
-the constructor and may reference the other formals, for a base that depends on
-`neighbours_within_batch` say. A language `from` contributes nothing to the
+the constructor and may reference the other formals, for a `k` that scales with
+`n_components` say. A language `from` contributes nothing to the
 checker, since there is no spec to take rules from.
 
 # Running it
@@ -210,8 +210,8 @@ edit.`, and runs `air` over them:
 - `R/params-prelude-generated.R`, the three shared helpers
 
 The hand-written checkers that validate something other than a params list stay
-where they are. `checkGeneWalkGraphDt()` checks a `data.table`, and that is not
-this tool's job.
+where they are. A checker for the columns of a `data.table`, say, is not this
+tool's job.
 
 For CI there is a drift guard that regenerates into a temporary directory and
 compares:
@@ -238,7 +238,7 @@ Linux? Pass `runner = "ubuntu-latest"`.
 
 # What is next
 
-Three linters, each aimed at something the survey of the five packages turned up
-rather than at a hypothetical: roxygen that has drifted away from the formals it
-documents, function inputs that never reach a `checkmate` call, and `rs_*`
-bindings without an R wrapper. Watch this space.
+Three linters, each aimed at something real packages turned up rather than at a
+hypothetical: roxygen that has drifted away from the formals it documents,
+function inputs that never reach a `checkmate` call, and `rextendr` bindings
+without an R wrapper. Watch this space.

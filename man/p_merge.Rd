@@ -18,7 +18,7 @@ other arguments. A language \code{from} contributes nothing to the checker.}
 \item{overrides}{List, language object or \code{NULL}. Constructor-specific
 defaults applied over \code{from} before the caller's list. A language object may
 reference the other formals, e.g.
-\code{quote(list(k = neighbours_within_batch * 2L))}. Defaults to \code{NULL}.}
+\code{quote(list(k = n_components * 2L))}. Defaults to \code{NULL}.}
 
 \item{doc}{String or \code{NULL}. Roxygen prose for this field.}
 }

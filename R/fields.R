@@ -314,7 +314,7 @@ p_free <- function(default, doc = NULL) {
 #' @param overrides List, language object or `NULL`. Constructor-specific
 #' defaults applied over `from` before the caller's list. A language object may
 #' reference the other formals, e.g.
-#' `quote(list(k = neighbours_within_batch * 2L))`. Defaults to `NULL`.
+#' `quote(list(k = n_components * 2L))`. Defaults to `NULL`.
 #' @param doc String or `NULL`. Roxygen prose for this field.
 #'
 #' @returns A `devforge_field`.
