@@ -25,6 +25,10 @@
   `PcaSolver::Randomised { oversample: 10, n_iter: 2 }` on one line when it
   fits, one field per line when it does not. Matrices and data frames print as
   `<matrix 500 x 30>`, long vectors as `<double[1000]>`, nested enums inline.
+- devforge's own objects print readably instead of dumping the raw list. An
+  enum spec prints as its Rust declaration (`enum PcaSolver { ... }` with
+  `///` docs and an `impl` line), a spec as its generated function with the
+  fields, fields as `int = 10L in [0,)`.
 - Enums go into their own `R/enums-generated.R` with a self-contained helper,
   so a package with enums and no params specs gets just that one file. The
   params prelude is unchanged for packages without enums.
