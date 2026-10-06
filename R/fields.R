@@ -19,7 +19,7 @@ QASSERT_LETTERS <- c(
 #' assertion, one rule table entry and one roxygen line.
 #'
 #' @param type String. One of
-#' `c("int", "dbl", "lgl", "chr", "choice", "free", "merge")`.
+#' `c("int", "dbl", "lgl", "chr", "choice", "free", "merge", "enum")`.
 #' @param default Any. The default value for the formal.
 #' @param range String or `NULL`. A checkmate range suffix such as `"[1,)"`.
 #' @param null_ok Boolean. Whether `NULL` is a permitted value.
@@ -35,6 +35,8 @@ QASSERT_LETTERS <- c(
 #' base the caller's list is merged into, see [p_merge()].
 #' @param overrides List, language object or `NULL`. For `"merge"` fields,
 #' constructor-specific defaults layered over `from`.
+#' @param enum String or `NULL`. For `"enum"` fields, the name of the
+#' [param_enum()] the field takes a variant of.
 #' @param required Boolean. The formal has no default and the caller must
 #' supply it. `default` is ignored. Defaults to `FALSE`.
 #' @param doc String or `NULL`. Roxygen prose for this field.
@@ -53,14 +55,16 @@ new_field <- function(
   check_as = NULL,
   from = NULL,
   overrides = NULL,
+  enum = NULL,
   required = FALSE,
   doc = NULL
 ) {
   checkmate::qassert(required, "B1")
   checkmate::assertChoice(
     type,
-    c("int", "dbl", "lgl", "chr", "choice", "free", "merge")
+    c("int", "dbl", "lgl", "chr", "choice", "free", "merge", "enum")
   )
+  checkmate::qassert(enum, c("S1", "0"))
   checkmate::qassert(range, c("S1", "0"))
   checkmate::qassert(null_ok, "B1")
   checkmate::qassert(choices, c("S+", "0"))
@@ -82,6 +86,7 @@ new_field <- function(
       check_as = check_as,
       from = from,
       overrides = overrides,
+      enum = enum,
       required = required,
       doc = doc
     ),
@@ -101,8 +106,8 @@ new_field <- function(
 #' @param for_check Boolean. Return the checker's pattern, which `check_as`
 #' may override, rather than the constructor's. Defaults to `FALSE`.
 #'
-#' @returns Character vector of qassert patterns, or `NULL` for a `"free"`
-#' field, which carries no automatic validation.
+#' @returns Character vector of qassert patterns, or `NULL` for a `"free"`,
+#' `"merge"` or `"enum"` field, which carry no qassert validation.
 #'
 #' @keywords internal
 field_qassert <- function(field, for_check = FALSE) {
@@ -111,7 +116,7 @@ field_qassert <- function(field, for_check = FALSE) {
   if (for_check && !is.null(field$check_as)) {
     return(field$check_as)
   }
-  if (field$type %in% c("free", "merge")) {
+  if (field$type %in% c("free", "merge", "enum")) {
     return(NULL)
   }
   letter <- field$letter %||% unname(QASSERT_LETTERS[[field$type]])
@@ -329,4 +334,58 @@ p_merge <- function(from, default = list(), overrides = NULL, doc = NULL) {
     overrides = overrides,
     doc = doc
   )
+}
+
+#' Enum field
+#'
+#' @description Takes a variant of a [param_enum()]. The generated formal
+#' defaults to the variant name, so callers can keep passing a string, and the
+#' constructor coerces it with the enum's `as_<name>()`. The returned list
+#' always carries the full tagged variant.
+#'
+#' @param enum String. The name of a [param_enum()] in the same package.
+#' @param default String. The default variant.
+#' @param doc String or `NULL`. Roxygen prose for this field.
+#'
+#' @returns A `devforge_field`.
+#'
+#' @export
+p_enum <- function(enum, default, doc = NULL) {
+  checkmate::qassert(enum, "S1")
+  checkmate::qassert(default, "S1")
+  new_field(type = "enum", default = default, enum = enum, doc = doc)
+}
+
+#' Enum variant
+#'
+#' @description One variant of a [param_enum()] and the fields it carries.
+#' Every field needs a default, so that the variant can be built from its name
+#' alone. `"merge"`, `"enum"` and `"free"` fields are not supported.
+#'
+#' @param doc String. Roxygen prose for the variant.
+#' @param ... Named [p_int()] and friends. The variant's payload. Leave empty
+#' for a variant that carries nothing.
+#'
+#' @returns A list of class `devforge_variant`.
+#'
+#' @export
+p_variant <- function(doc, ...) {
+  checkmate::qassert(doc, "S1")
+  fields <- list(...)
+  if (length(fields) > 0L) {
+    assert_fields(fields)
+  }
+  bad <- names(fields)[purrr::map_lgl(fields, \(f) {
+    f$type %in% c("merge", "enum", "free") || f$required
+  })]
+  if (length(bad) > 0L) {
+    stop(sprintf(
+      "Variant fields must be typed and carry a default: %s.",
+      paste(bad, collapse = ", ")
+    ))
+  }
+  if ("variant" %in% names(fields)) {
+    stop("`variant` is reserved for the tag and cannot be a variant field.")
+  }
+  structure(list(doc = doc, fields = fields), class = "devforge_variant")
 }

@@ -167,11 +167,92 @@ param_defaults <- function(
   if (any(purrr::map_lgl(fields, \(f) identical(f$type, "merge")))) {
     stop("A defaults block cannot carry `p_merge()` fields.")
   }
+  # modifyList() recurses into the tagged list, so merging a caller's variant
+  # over the default one would mix the payloads of two variants.
+  if (any(purrr::map_lgl(fields, \(f) identical(f$type, "enum")))) {
+    stop("A defaults block cannot carry `p_enum()` fields.")
+  }
   if (any(purrr::map_lgl(fields, \(f) f$required))) {
     stop("A defaults block cannot carry fields without a default.")
   }
   spec$defaults_only <- TRUE
   spec
+}
+
+#' Enum specification
+#'
+#' @description A Rust style enum: a fixed set of variants, each carrying its
+#' own fields. The generator emits one constructor per variant
+#' (`<name>_<variant>()`), a coercion `as_<name>()`, an exhaustive
+#' `match_<name>()`, a checkmate extension and one S3 generic per entry of
+#' `methods`. A value is a list holding `variant` plus that variant's fields,
+#' with class `c("<Enum>_<Variant>", "<Enum>", "list")`.
+#'
+#' @param name String. Snake case stem. `"pca_solver"` gives
+#' `pca_solver_<variant>()`, `as_pca_solver()`, `match_pca_solver()` and the
+#' class `PcaSolver`.
+#' @param title String. Short human readable name, used in titles and in the
+#' checker's error messages.
+#' @param variants Named list of [p_variant()]. Names are snake_case. Fields
+#' pick their default variant with [p_enum()].
+#' @param methods Named list of strings. Each name becomes an S3 generic
+#' dispatching on the variant class, each string its roxygen title. The
+#' methods themselves are written by hand under `R/`, and [forge_params()]
+#' errors when a variant has neither its own method nor one for the enum
+#' class. Defaults to an empty list.
+#' @param export Boolean. Whether the generated functions get `@export`.
+#' Defaults to `TRUE`.
+#'
+#' @returns A list of class `devforge_enum`.
+#'
+#' @export
+param_enum <- function(name, title, variants, methods = list(), export = TRUE) {
+  checkmate::qassert(name, "S1")
+  checkmate::qassert(title, "S1")
+  checkmate::qassert(export, "B1")
+  checkmate::assertList(
+    variants,
+    types = "devforge_variant",
+    min.len = 1L,
+    names = "unique"
+  )
+  checkmate::assertList(methods, types = "character", names = "unique")
+  checkmate::qassertr(methods, "S1")
+  # `x` is the first formal of the generated match_<name>().
+  bad <- names(variants)[
+    !grepl("^[a-z][a-z0-9_]*$", names(variants)) | names(variants) == "x"
+  ]
+  if (length(bad) > 0L) {
+    stop(sprintf(
+      "Variant names must be snake_case and not `x`: %s.",
+      paste(bad, collapse = ", ")
+    ))
+  }
+  structure(
+    list(
+      name = name,
+      title = title,
+      class = to_pascal_case(name),
+      variants = variants,
+      methods = methods,
+      export = export
+    ),
+    class = "devforge_enum"
+  )
+}
+
+#' The class of one enum variant
+#'
+#' @param enum A `devforge_enum`.
+#' @param variant String. The variant name.
+#'
+#' @returns String. `"<Enum>_<Variant>"`.
+#'
+#' @keywords internal
+variant_class <- function(enum, variant) {
+  checkmate::assertClass(enum, "devforge_enum")
+  checkmate::qassert(variant, "S1")
+  paste0(enum$class, "_", to_pascal_case(variant))
 }
 
 #' Validate a named list of fields
@@ -201,12 +282,13 @@ assert_fields <- function(fields) {
 #' Collect the specs defined in a package's spec directory
 #'
 #' @description Sources every `.R` file under `inst/params/` in a fresh
-#' environment and returns the `devforge_spec` objects it finds, in file then
-#' definition order.
+#' environment and returns the `devforge_spec` and `devforge_enum` objects it
+#' finds, sorted by name.
 #'
 #' @param pkg String. Path to the package root. Defaults to `"."`.
 #'
-#' @returns A named list of `devforge_spec` objects, named by their `name`.
+#' @returns A named list of `devforge_spec` and `devforge_enum` objects, named
+#' by their `name`.
 #'
 #' @export
 load_specs <- function(pkg = ".") {
@@ -222,7 +304,9 @@ load_specs <- function(pkg = ".") {
     sys.source(file, envir = env, keep.source = FALSE)
   }
   objs <- mget(ls(env, sorted = TRUE), envir = env)
-  specs <- objs[purrr::map_lgl(objs, \(x) inherits(x, "devforge_spec"))]
+  specs <- objs[purrr::map_lgl(objs, \(x) {
+    inherits(x, c("devforge_spec", "devforge_enum"))
+  })]
   if (length(specs) == 0L) {
     stop(sprintf("No `param_spec()` objects found in `%s`.", spec_dir))
   }

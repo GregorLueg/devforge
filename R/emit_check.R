@@ -175,6 +175,34 @@ emit_checker <- function(spec, specs = list()) {
     )
   }
 
+  enum_fields <- purrr::keep(
+    checker_fields(spec, specs),
+    \(f) identical(f$type, "enum")
+  )
+  enum_lines <- purrr::imap(enum_fields, \(f, name) {
+    msg <- emit_call(
+      "sprintf",
+      list(
+        emit_string(sprintf(
+          "The element `%s` in %s is invalid. %%s",
+          name,
+          spec$label
+        )),
+        "res"
+      ),
+      budget = 64L
+    )
+    msg[length(msg)] <- paste0(msg[length(msg)], ")")
+    c(
+      sprintf('res <- check%s(x[["%s"]])', to_pascal_case(f$enum), name),
+      "if (!isTRUE(res)) {",
+      indent(prefix_first("return(", msg)),
+      "}",
+      ""
+    )
+  })
+  body <- c(body, unlist(enum_lines, use.names = FALSE))
+
   if (!is.null(spec$extra_check)) {
     body <- c(body, deparse_block(spec$extra_check), "")
   }

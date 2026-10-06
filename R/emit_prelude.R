@@ -121,11 +121,58 @@ apply_choice_rules <- function(x, rules, label, hint = NULL) {
 }
 '
 
+# Only emitted for packages that declare enums, so adding it did not change the
+# prelude of every existing consumer.
+PRELUDE_ENUM_SOURCE <- '
+#\' Check a tagged enum value
+#\'
+#\' @description Verifies that `x` is a list whose `variant` is one of
+#\' `names(variants)` and whose other names are exactly that variant\'s fields,
+#\' then validates the fields with their qtest patterns and choice sets.
+#\'
+#\' @param x The object to check.
+#\' @param variants Named list, one entry per variant, each a list with
+#\' `fields` (character vector) and optionally `rules` (named list of qtest
+#\' patterns) and `choices` (named list of allowed values).
+#\' @param label Short human-readable label used in the error message.
+#\'
+#\' @returns `TRUE` if the check was successful, otherwise a checkmate-style
+#\' error string.
+#\'
+#\' @keywords internal
+check_enum_value <- function(x, variants, label) {
+  res <- checkmate::checkList(x)
+  if (!isTRUE(res)) {
+    return(res)
+  }
+  res <- checkmate::checkChoice(x[["variant"]], names(variants))
+  if (!isTRUE(res)) {
+    return(sprintf("The `variant` of %s is invalid: %s", label, res))
+  }
+  spec <- variants[[x[["variant"]]]]
+  label <- sprintf("%s variant `%s`", label, x[["variant"]])
+  res <- check_list_shape(x, c("variant", spec$fields), strict = TRUE)
+  if (!isTRUE(res)) {
+    return(sprintf("Invalid %s. %s", label, res))
+  }
+  res <- apply_qtest_rules(x, spec$rules, label)
+  if (!isTRUE(res)) {
+    return(res)
+  }
+  apply_choice_rules(x, spec$choices, label)
+}
+'
+
 #' The shared checker helpers as source lines
+#'
+#' @param enums Boolean. Also emit the enum helper. Defaults to `FALSE`.
 #'
 #' @returns Character vector of R source lines.
 #'
 #' @keywords internal
-emit_prelude <- function() {
-  strsplit(PRELUDE_SOURCE, "\n", fixed = TRUE)[[1L]]
+emit_prelude <- function(enums = FALSE) {
+  checkmate::qassert(enums, "B1")
+  src <- if (enums) paste0(PRELUDE_SOURCE, PRELUDE_ENUM_SOURCE) else
+    PRELUDE_SOURCE
+  strsplit(src, "\n", fixed = TRUE)[[1L]]
 }

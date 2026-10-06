@@ -16,5 +16,6 @@ paths that are out of date.
 \description{
 Regenerates into a temporary directory and compares. Meant for
 CI, so that a hand-edit of a generated file or a spec change that was never
-regenerated fails the build.
+regenerated fails the build. Also errors when an enum method lacks an
+implementation for some variant, see \code{\link[=param_enum]{param_enum()}}.
 }

@@ -17,5 +17,6 @@ Character vector of the paths written, invisibly.
 \description{
 Reads every spec under \verb{inst/params/}, writes the three
 generated files under \verb{R/} and formats them with air. The generated files
-are meant to be committed.
+are meant to be committed. Errors when an enum method lacks an
+implementation for some variant, see \code{\link[=param_enum]{param_enum()}}.
 }

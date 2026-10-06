@@ -7,7 +7,8 @@
 render_specs(specs)
 }
 \arguments{
-\item{specs}{Named list of \code{devforge_spec} objects.}
+\item{specs}{Named list of \code{devforge_spec} and \code{devforge_enum} objects, as
+from \code{\link[=load_specs]{load_specs()}}.}
 }
 \value{
 A named list of character vectors, one per entry of

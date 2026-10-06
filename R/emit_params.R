@@ -11,14 +11,15 @@ FIELD_TYPE_PROSE <- c(
   chr = "String",
   choice = "String",
   free = "Any",
-  merge = "List"
+  merge = "List",
+  enum = "String or enum"
 )
 
 #' The documented default of a field
 #'
 #' @description For a choice field the formal default is the whole set of
 #' choices, but what is documented is the first one, which is what `match.arg()`
-#' picks.
+#' picks. An enum field documents the variant name it defaults to.
 #'
 #' @param field A `devforge_field`.
 #'
@@ -100,6 +101,16 @@ field_doc_prose <- function(field) {
     parts <- paste0(
       parts,
       sprintf(" One of %s.", paste0("`", deparse_value(field$choices), "`"))
+    )
+  }
+  if (identical(field$type, "enum")) {
+    parts <- paste0(
+      parts,
+      sprintf(
+        " A variant name or a `%s()` value, see [as_%s()].",
+        paste0(field$enum, "_*"),
+        field$enum
+      )
     )
   }
   if (field$required) {
@@ -242,6 +253,8 @@ roxygen_itemize <- function(spec) {
   items <- purrr::imap(ordered, \(field, name) {
     prose <- if (identical(field$type, "merge")) {
       merge_item_prose(field, name)
+    } else if (identical(field$type, "enum")) {
+      sprintf("%s - `%s`. %s", name, to_pascal_case(field$enum), field$doc)
     } else {
       paste0(name, " - ", field_doc_prose(field))
     }
@@ -324,16 +337,19 @@ emit_ctor_roxygen <- function(spec) {
 
 ## body ------------------------------------------------------------------------
 
-#' The assertion lines for a generated constructor
+#' The assertion lines for a set of fields
 #'
-#' @param spec A `devforge_spec`.
+#' @description Enum fields contribute nothing here, `as_<enum>()` validates
+#' them when it coerces.
+#'
+#' @param fields Named list of `devforge_field` objects.
 #'
 #' @returns Character vector of R source lines.
 #'
 #' @keywords internal
-emit_ctor_checks <- function(spec) {
-  checkmate::assertClass(spec, "devforge_spec")
-  purrr::imap(spec$fields, \(field, name) {
+emit_field_checks <- function(fields) {
+  checkmate::assertList(fields, types = "devforge_field")
+  purrr::imap(fields, \(field, name) {
     pattern <- field_qassert(field)
     lines <- character(0)
     if (identical(field$type, "choice")) {
@@ -355,6 +371,49 @@ emit_ctor_checks <- function(spec) {
     unlist(use.names = FALSE)
 }
 
+#' The formals of a generated function
+#'
+#' @param fields Named list of `devforge_field` objects.
+#'
+#' @returns Character vector of R source lines, one per formal, without the
+#' surrounding `function(` and `)`.
+#'
+#' @keywords internal
+emit_formals <- function(fields) {
+  checkmate::assertList(fields, types = "devforge_field", min.len = 1L)
+  paste0(
+    names(fields),
+    purrr::map_chr(fields, \(f) {
+      if (f$required) "" else paste0(" = ", field_formal_default(f))
+    }),
+    c(rep(",", length(fields) - 1L), "")
+  )
+}
+
+#' The lines that resolve choice and enum fields
+#'
+#' @description `match.arg()` for choice fields, `as_<enum>()` for enum fields.
+#'
+#' @param fields Named list of `devforge_field` objects.
+#'
+#' @returns Character vector of R source lines, a trailing blank line included
+#' when there are any.
+#'
+#' @keywords internal
+emit_resolve <- function(fields) {
+  checkmate::assertList(fields, types = "devforge_field")
+  lines <- purrr::imap(fields, \(f, name) {
+    switch(
+      f$type,
+      choice = sprintf("%s <- match.arg(%s)", name, name),
+      enum = sprintf("%s <- as_%s(%s)", name, f$enum, name),
+      NULL
+    )
+  }) |>
+    unlist(use.names = FALSE)
+  if (length(lines) > 0L) c(lines, "") else character(0)
+}
+
 #' A generated `params_*()` constructor
 #'
 #' @param spec A `devforge_spec`.
@@ -365,7 +424,6 @@ emit_ctor_checks <- function(spec) {
 emit_ctor <- function(spec) {
   checkmate::assertClass(spec, "devforge_spec")
   fn_name <- paste0("params_", spec$name)
-  names_vec <- names(spec$fields)
   body_list <- emit_return_list(spec)
   if (!is.null(spec$class_tag)) {
     body_list <- c(
@@ -383,15 +441,6 @@ emit_ctor <- function(spec) {
       "}"
     ))
   }
-  choices <- names_vec[purrr::map_lgl(
-    spec$fields,
-    \(f) identical(f$type, "choice")
-  )]
-  resolve <- if (length(choices) > 0L) {
-    c(sprintf("%s <- match.arg(%s)", choices, choices), "")
-  } else {
-    character(0)
-  }
   merges <- purrr::keep(spec$fields, \(f) identical(f$type, "merge"))
   merge_lines <- if (length(merges) > 0L) {
     c(
@@ -407,22 +456,15 @@ emit_ctor <- function(spec) {
   } else {
     character(0)
   }
-  formals_src <- paste0(
-    names_vec,
-    purrr::map_chr(spec$fields, \(f) {
-      if (f$required) "" else paste0(" = ", field_formal_default(f))
-    }),
-    c(rep(",", length(names_vec) - 1L), "")
-  )
   c(
     emit_ctor_roxygen(spec),
     paste0(fn_name, " <- function("),
-    indent(formals_src),
+    indent(emit_formals(spec$fields)),
     ") {",
     indent(c(
-      resolve,
+      emit_resolve(spec$fields),
       "# Checks",
-      emit_ctor_checks(spec),
+      emit_field_checks(spec$fields),
       merge_lines,
       extra,
       "",

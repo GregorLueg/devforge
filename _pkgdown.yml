@@ -42,6 +42,7 @@ reference:
     contents:
       - param_spec
       - param_defaults
+      - param_enum
       - load_specs
   # Field types
   - title: Field types
@@ -54,6 +55,8 @@ reference:
       - p_choice
       - p_free
       - p_merge
+      - p_enum
+      - p_variant
   # Generation
   - title: Generation
     desc: Writing the generated files and keeping them honest

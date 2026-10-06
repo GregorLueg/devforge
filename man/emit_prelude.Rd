@@ -4,7 +4,10 @@
 \alias{emit_prelude}
 \title{The shared checker helpers as source lines}
 \usage{
-emit_prelude()
+emit_prelude(enums = FALSE)
+}
+\arguments{
+\item{enums}{Boolean. Also emit the enum helper. Defaults to \code{FALSE}.}
 }
 \value{
 Character vector of R source lines.

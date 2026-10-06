@@ -62,32 +62,75 @@ dedupe_checkers <- function(specs) {
 
 #' Render specs into the source of the generated files
 #'
-#' @param specs Named list of `devforge_spec` objects.
+#' @param specs Named list of `devforge_spec` and `devforge_enum` objects, as
+#' from [load_specs()].
 #'
 #' @returns A named list of character vectors, one per entry of
 #' `GENERATED_FILES`, without the generated header.
 #'
 #' @keywords internal
 render_specs <- function(specs) {
-  checkmate::assertList(specs, types = "devforge_spec", min.len = 1L)
+  checkmate::assertList(
+    specs,
+    types = c("devforge_spec", "devforge_enum"),
+    min.len = 1L
+  )
+  is_enum <- purrr::map_lgl(specs, \(s) inherits(s, "devforge_enum"))
+  enums <- specs[is_enum]
+  specs <- specs[!is_enum]
+  assert_enum_refs(specs, enums)
   params <- purrr::map(specs, \(s) c(emit_ctor(s), ""))
   checkers <- purrr::map(
     dedupe_checkers(specs),
     \(s) c(emit_checker(s, specs), "")
   )
-  list(
-    prelude = emit_prelude(),
-    params = c(
-      section_header("parameter wrappers"),
+  enum_params <- character(0)
+  enum_checkers <- character(0)
+  if (length(enums) > 0L) {
+    enum_params <- c(
+      section_header("enums"),
       "",
-      unlist(params, use.names = FALSE)
+      unlist(purrr::map(enums, emit_enum), use.names = FALSE),
+      emit_enum_generics(enums)
+    )
+    enum_checkers <- c(
+      section_header("enum checkers"),
+      "",
+      unlist(
+        purrr::map(enums, \(e) c(emit_enum_checker(e), "")),
+        use.names = FALSE
+      )
+    )
+  }
+  list(
+    prelude = emit_prelude(enums = length(enums) > 0L),
+    params = c(
+      if (length(specs) > 0L) {
+        c(section_header("parameter wrappers"), "")
+      },
+      unlist(params, use.names = FALSE),
+      enum_params
     ),
     checkers = c(
-      section_header("parameter checkers"),
-      "",
-      unlist(checkers, use.names = FALSE)
+      if (length(specs) > 0L) {
+        c(section_header("parameter checkers"), "")
+      },
+      unlist(checkers, use.names = FALSE),
+      enum_checkers
     )
   )
+}
+
+#' The enums among a package's specs
+#'
+#' @param specs Named list, as from [load_specs()].
+#'
+#' @returns Named list of `devforge_enum` objects.
+#'
+#' @keywords internal
+spec_enums <- function(specs) {
+  checkmate::assertList(specs)
+  purrr::keep(specs, \(s) inherits(s, "devforge_enum"))
 }
 
 #' Run air over a set of files
@@ -168,7 +211,8 @@ warn_line_width <- function(paths, width = 80L) {
 #'
 #' @description Reads every spec under `inst/params/`, writes the three
 #' generated files under `R/` and formats them with air. The generated files
-#' are meant to be committed.
+#' are meant to be committed. Errors when an enum method lacks an
+#' implementation for some variant, see [param_enum()].
 #'
 #' @param pkg String. Path to the package root. Defaults to `"."`.
 #' @param .verbose Boolean. Report what was written. Defaults to `TRUE`.
@@ -181,6 +225,7 @@ forge_params <- function(pkg = ".", .verbose = TRUE) {
   checkmate::qassert(.verbose, "B1")
   specs <- load_specs(pkg)
   rendered <- render_specs(specs)
+  check_enum_methods(pkg, spec_enums(specs))
   paths <- file.path(pkg, GENERATED_FILES[names(rendered)])
   write_generated(rendered, paths)
   warn_line_width(paths)
@@ -198,7 +243,8 @@ forge_params <- function(pkg = ".", .verbose = TRUE) {
 #'
 #' @description Regenerates into a temporary directory and compares. Meant for
 #' CI, so that a hand-edit of a generated file or a spec change that was never
-#' regenerated fails the build.
+#' regenerated fails the build. Also errors when an enum method lacks an
+#' implementation for some variant, see [param_enum()].
 #'
 #' @param pkg String. Path to the package root. Defaults to `"."`.
 #'
@@ -208,7 +254,9 @@ forge_params <- function(pkg = ".", .verbose = TRUE) {
 #' @export
 params_up_to_date <- function(pkg = ".") {
   checkmate::assertDirectoryExists(pkg)
-  rendered <- render_specs(load_specs(pkg))
+  specs <- load_specs(pkg)
+  rendered <- render_specs(specs)
+  check_enum_methods(pkg, spec_enums(specs))
   tmp <- file.path(tempdir(), paste0("devforge-", as.integer(Sys.time())))
   dir.create(file.path(tmp, "R"), recursive = TRUE, showWarnings = FALSE)
   tmp_paths <- file.path(tmp, GENERATED_FILES[names(rendered)])

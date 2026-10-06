@@ -13,8 +13,8 @@ field_qassert(field, for_check = FALSE)
 may override, rather than the constructor's. Defaults to \code{FALSE}.}
 }
 \value{
-Character vector of qassert patterns, or \code{NULL} for a \code{"free"}
-field, which carries no automatic validation.
+Character vector of qassert patterns, or \code{NULL} for a \code{"free"},
+\code{"merge"} or \code{"enum"} field, which carry no qassert validation.
 }
 \description{
 Folds type, length, range and nullability into the single
