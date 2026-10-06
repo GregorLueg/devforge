@@ -1,3 +1,9 @@
+# devforge 0.1.0
+
+## Feature
+
+- A first implementation of a Rust-inspired `Enum` for R.
+
 # devforge 0.0.6
 
 ## Features
