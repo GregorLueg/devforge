@@ -39,6 +39,17 @@ checker_fields <- function(spec, specs = list()) {
       ))
     }
     inner <- checker_fields(base, specs)
+    missing_drop <- setdiff(field$drop, names(inner))
+    if (length(missing_drop) > 0L) {
+      stop(sprintf(
+        "Field `%s` of spec `%s` drops %s, which `%s` does not have.",
+        name,
+        spec$name,
+        paste0("`", missing_drop, "`", collapse = ", "),
+        field$from
+      ))
+    }
+    inner <- inner[setdiff(names(inner), field$drop)]
     out <- c(out, inner[setdiff(names(inner), names(out))])
   }
   out

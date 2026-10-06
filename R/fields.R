@@ -35,6 +35,10 @@ QASSERT_LETTERS <- c(
 #' base the caller's list is merged into, see [p_merge()].
 #' @param overrides List, language object or `NULL`. For `"merge"` fields,
 #' constructor-specific defaults layered over `from`.
+#' @param drop Character vector or `NULL`. For `"merge"` fields, elements
+#' removed from the base before the merge.
+#' @param strict Boolean. For `"merge"` fields, reject caller elements that are
+#' not in the base. Defaults to `FALSE`.
 #' @param required Boolean. The formal has no default and the caller must
 #' supply it. `default` is ignored. Defaults to `FALSE`.
 #' @param doc String or `NULL`. Roxygen prose for this field.
@@ -53,10 +57,14 @@ new_field <- function(
   check_as = NULL,
   from = NULL,
   overrides = NULL,
+  drop = NULL,
+  strict = FALSE,
   required = FALSE,
   doc = NULL
 ) {
   checkmate::qassert(required, "B1")
+  checkmate::qassert(drop, c("S+", "0"))
+  checkmate::qassert(strict, "B1")
   checkmate::assertChoice(
     type,
     c("int", "dbl", "lgl", "chr", "choice", "free", "merge")
@@ -82,6 +90,8 @@ new_field <- function(
       check_as = check_as,
       from = from,
       overrides = overrides,
+      drop = drop,
+      strict = strict,
       required = required,
       doc = doc
     ),
@@ -310,12 +320,25 @@ p_free <- function(default, doc = NULL) {
 #' defaults applied over `from` before the caller's list. A language object may
 #' reference the other formals, e.g.
 #' `quote(list(k = neighbours_within_batch * 2L))`. Defaults to `NULL`.
+#' @param drop Character vector or `NULL`. Elements removed from the base
+#' before the merge, for a constructor that sets them itself or has no use for
+#' them. They drop out of the checker too. Defaults to `NULL`.
+#' @param strict Boolean. The constructor rejects caller elements that are not
+#' in the base (after `drop`) instead of splicing them through unchecked.
+#' Defaults to `FALSE`.
 #' @param doc String or `NULL`. Roxygen prose for this field.
 #'
 #' @returns A `devforge_field`.
 #'
 #' @export
-p_merge <- function(from, default = list(), overrides = NULL, doc = NULL) {
+p_merge <- function(
+  from,
+  default = list(),
+  overrides = NULL,
+  drop = NULL,
+  strict = FALSE,
+  doc = NULL
+) {
   if (!(checkmate::testString(from) || is.language(from))) {
     stop("`from` must be a spec name or a language object.")
   }
@@ -327,6 +350,8 @@ p_merge <- function(from, default = list(), overrides = NULL, doc = NULL) {
     default = default,
     from = from,
     overrides = overrides,
+    drop = drop,
+    strict = strict,
     doc = doc
   )
 }
