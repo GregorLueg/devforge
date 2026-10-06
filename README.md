@@ -6,8 +6,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![pkgdown](https://img.shields.io/badge/pkgdown-website-1b5e9f?logo=github)](https://gregorlueg.github.io/devforge/)
 
-Development tooling for the bixverse family of R packages + others.  Dev-time 
-only: it is never an `Imports:` of anything it generates.
+Development tooling for R packages, built for the bixverse family but not tied
+to it. Dev-time only: it is never an `Imports:` of anything it generates.
 
 ## What it does
 
@@ -57,6 +57,61 @@ devforge::params_up_to_date(".") # the CI drift guard
 ```
 
 See `vignette("params")` for the escape hatches and the migration recipe.
+
+**Second feature:**
+
+Rust style enums. Strings are R's enums, and they fall apart the moment one
+variant needs fields the others do not: `momentum` for SGD, `beta1` and `beta2`
+for Adam, all flat in one list and silently ignored for the wrong optimiser. A
+`param_enum()` gives every variant its own fields:
+
+```r
+enum_optimiser <- param_enum(
+  name = "optimiser",
+  title = "optimiser",
+  variants = list(
+    sgd = p_variant(
+      "Stochastic gradient descent.",
+      momentum = p_dbl(0.9, range = "[0,1)", doc = "Momentum.")
+    ),
+    adam = p_variant(
+      "Adam.",
+      beta1 = p_dbl(0.9, range = "[0,1)", doc = "First moment decay."),
+      beta2 = p_dbl(0.999, range = "[0,1)", doc = "Second moment decay.")
+    ),
+    lbfgs = p_variant(
+      "Limited memory BFGS.",
+      history = p_int(10L, range = "[1,)", doc = "Stored updates.")
+    )
+  ),
+  methods = list(step = "Take one optimisation step")
+)
+```
+
+Out come a validated constructor per variant (`optimiser_adam()`), a coercion
+from the variant name (`as_optimiser("sgd")`), a checker that rejects fields
+belonging to another variant, and an exhaustive match. Leave an arm out and it
+errors on every call, not just when the missing variant shows up:
+
+```r
+match_optimiser(
+  optimiser_adam(beta1 = 0.95),
+  sgd = \(v) v$momentum,
+  adam = \(v) c(v$beta1, v$beta2),
+  lbfgs = \(v) v$history
+)
+#> [1] 0.950 0.999
+```
+
+`methods` are the impl blocks: one S3 generic each, with the bodies written by
+hand in `R/` per variant or once for the whole enum. `forge_params()` errors
+when a variant has neither, which is as close to `rustc` complaining about a
+non-exhaustive match as R gets. Payloads can be anything: required fields,
+`p_free()` for a matrix, or another enum. Inside a `param_spec()`, a
+`p_enum("optimiser", "adam")` field still takes the plain string from the
+caller and hands back the full variant.
+
+See `vignette("enums")` for the details.
 
 ## Installation
 

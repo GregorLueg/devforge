@@ -1,8 +1,40 @@
 # devforge 0.1.0
 
-## Feature
+## Features
 
-- A first implementation of a Rust-inspired `Enum` for R.
+- A first implementation of a Rust-inspired `Enum` for R. `param_enum()`
+  declares the variants, `p_variant()` gives each one its own fields. Every
+  enum gets a validated constructor per variant (`<enum>_<variant>()`),
+  `as_<enum>()` to build a variant from its name or restore a list's class, a
+  `check<Enum>()` / `assert<Enum>()` pair that rejects fields belonging to
+  another variant, and an exhaustive `match_<enum>()` that errors on a missing
+  arm whatever value it is called with. `.default` is the `_ =>` arm.
+- Impl blocks. `param_enum(methods = ...)` emits one S3 generic per method.
+  The methods are written by hand in `R/`, per variant class or once for the
+  enum class. `forge_params()` and `params_up_to_date()` parse `R/` and error
+  when a variant has neither.
+- Variant payloads take any field type but `p_merge()`: required fields,
+  `p_free()` for a matrix or a `data.table`, and `p_enum()` for nested enums,
+  which are checked with their own checker.
+- `p_enum()` puts an enum into a `param_spec()`. The formal still takes the
+  variant name as a string, the constructor hands back the full variant, and
+  the params checker delegates to the enum's checker. `param_defaults()`
+  rejects enum fields for now, since `modifyList()` would merge the fields of
+  two different variants.
+- Enums go into their own `R/enums-generated.R` with a self-contained helper,
+  so a package with enums and no params specs gets just that one file. The
+  params prelude is unchanged for packages without enums.
+- `forge_params()` removes a generated file once the last spec feeding it is
+  gone, and `params_up_to_date()` reports it as stale until then.
+- New `vignette("enums")`.
+
+## Other
+
+- The roxygen label examples in the emitted prelude no longer mention
+  bixverse params. Every consumer's `R/params-prelude-generated.R` reads as
+  stale once, until `forge_params()` is run again.
+- Title, docs and the params vignette use package agnostic examples. devforge
+  is built for the bixverse family but works for any R package.
 
 # devforge 0.0.6
 
