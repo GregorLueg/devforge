@@ -2,7 +2,9 @@
 
 `name <- utils::modifyList(base, name, keep.null = TRUE)`, with the
 overrides layered between the base and the caller's list when there are
-any.
+any. With `drop` or `strict` the base is bound to `<name>_base` first,
+so elements can be removed from it and the caller's names checked
+against it.
 
 ## Usage
 

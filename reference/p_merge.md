@@ -11,7 +11,14 @@ spec's rules.
 ## Usage
 
 ``` r
-p_merge(from, default = list(), overrides = NULL, doc = NULL)
+p_merge(
+  from,
+  default = list(),
+  overrides = NULL,
+  drop = NULL,
+  strict = FALSE,
+  doc = NULL
+)
 ```
 
 ## Arguments
@@ -35,6 +42,18 @@ p_merge(from, default = list(), overrides = NULL, doc = NULL)
   over `from` before the caller's list. A language object may reference
   the other formals, e.g.
   `quote(list(k = neighbours_within_batch * 2L))`. Defaults to `NULL`.
+
+- drop:
+
+  Character vector or `NULL`. Elements removed from the base before the
+  merge, for a constructor that sets them itself or has no use for them.
+  They drop out of the checker too. Defaults to `NULL`.
+
+- strict:
+
+  Boolean. The constructor rejects caller elements that are not in the
+  base (after `drop`) instead of splicing them through unchecked.
+  Defaults to `FALSE`.
 
 - doc:
 

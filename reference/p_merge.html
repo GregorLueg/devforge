@@ -19,7 +19,7 @@ spec's rules."><meta property="og:image" content="https://gregorlueg.github.io/d
 
     <a class="navbar-brand me-2" href="../index.html">devforge</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -66,7 +66,14 @@ spec's rules.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">p_merge</span><span class="op">(</span><span class="va">from</span>, default <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>, overrides <span class="op">=</span> <span class="cn">NULL</span>, doc <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">p_merge</span><span class="op">(</span></span>
+<span>  <span class="va">from</span>,</span>
+<span>  default <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  overrides <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  drop <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  strict <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  doc <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -90,6 +97,18 @@ other arguments. A language <code>from</code> contributes nothing to the checker
 defaults applied over <code>from</code> before the caller's list. A language object may
 reference the other formals, e.g.
 <code>quote(list(k = neighbours_within_batch * 2L))</code>. Defaults to <code>NULL</code>.</p></dd>
+
+
+<dt id="arg-drop">drop<a class="anchor" aria-label="anchor" href="#arg-drop"></a></dt>
+<dd><p>Character vector or <code>NULL</code>. Elements removed from the base
+before the merge, for a constructor that sets them itself or has no use for
+them. They drop out of the checker too. Defaults to <code>NULL</code>.</p></dd>
+
+
+<dt id="arg-strict">strict<a class="anchor" aria-label="anchor" href="#arg-strict"></a></dt>
+<dd><p>Boolean. The constructor rejects caller elements that are not
+in the base (after <code>drop</code>) instead of splicing them through unchecked.
+Defaults to <code>FALSE</code>.</p></dd>
 
 
 <dt id="arg-doc">doc<a class="anchor" aria-label="anchor" href="#arg-doc"></a></dt>

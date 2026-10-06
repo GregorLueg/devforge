@@ -20,6 +20,8 @@ new_field(
   check_as = NULL,
   from = NULL,
   overrides = NULL,
+  drop = NULL,
+  strict = FALSE,
   required = FALSE,
   doc = NULL
 )
@@ -74,6 +76,16 @@ new_field(
 
   List, language object or `NULL`. For `"merge"` fields,
   constructor-specific defaults layered over `from`.
+
+- drop:
+
+  Character vector or `NULL`. For `"merge"` fields, elements removed
+  from the base before the merge.
+
+- strict:
+
+  Boolean. For `"merge"` fields, reject caller elements that are not in
+  the base. Defaults to `FALSE`.
 
 - required:
 

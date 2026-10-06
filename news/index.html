@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">devforge</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,6 +41,14 @@
       <small>Source: <a href="https://github.com/GregorLueg/devforge/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.7" id="devforge-007">devforge 0.0.7<a class="anchor" aria-label="anchor" href="#devforge-007"></a></h2>
+<div class="section level3">
+<h3 id="feature-0-0-7">Feature<a class="anchor" aria-label="anchor" href="#feature-0-0-7"></a></h3>
+<ul><li>
+<code><a href="../reference/p_merge.html">p_merge()</a></code> gains <code>drop</code> and <code>strict</code>. <code>drop</code> removes elements from the base before the merge, for a constructor that sets them itself or has no use for them; they drop out of the checker too, and dropping a name the base does not have errors at generation. <code>strict = TRUE</code> makes the constructor reject caller elements that are not in the base instead of splicing them through. Merges without either emit exactly as before.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.6" id="devforge-006">devforge 0.0.6<a class="anchor" aria-label="anchor" href="#devforge-006"></a></h2>
 <div class="section level3">

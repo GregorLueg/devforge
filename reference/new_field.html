@@ -11,7 +11,7 @@ assertion, one rule table entry and one roxygen line."><meta property="og:image"
 
     <a class="navbar-brand me-2" href="../index.html">devforge</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,6 +65,8 @@ assertion, one rule table entry and one roxygen line.</p>
 <span>  check_as <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  from <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  overrides <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  drop <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  strict <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  required <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  doc <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -119,6 +121,16 @@ base the caller's list is merged into, see <code><a href="p_merge.html">p_merge(
 <dt id="arg-overrides">overrides<a class="anchor" aria-label="anchor" href="#arg-overrides"></a></dt>
 <dd><p>List, language object or <code>NULL</code>. For <code>"merge"</code> fields,
 constructor-specific defaults layered over <code>from</code>.</p></dd>
+
+
+<dt id="arg-drop">drop<a class="anchor" aria-label="anchor" href="#arg-drop"></a></dt>
+<dd><p>Character vector or <code>NULL</code>. For <code>"merge"</code> fields, elements
+removed from the base before the merge.</p></dd>
+
+
+<dt id="arg-strict">strict<a class="anchor" aria-label="anchor" href="#arg-strict"></a></dt>
+<dd><p>Boolean. For <code>"merge"</code> fields, reject caller elements that are
+not in the base. Defaults to <code>FALSE</code>.</p></dd>
 
 
 <dt id="arg-required">required<a class="anchor" aria-label="anchor" href="#arg-required"></a></dt>
