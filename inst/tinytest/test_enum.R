@@ -301,6 +301,32 @@ expect_equal(
   "no HVGs"
 )
 
+# printing, dispatched inside genv since nothing is registered here
+expect_equal(evalq(format(pca_solver_exact()), genv), "PcaSolver::Exact")
+expect_equal(
+  evalq(format(pca_solver_randomised(n_iter = 4L)), genv),
+  "PcaSolver::Randomised { oversample: 10, n_iter: 4 }"
+)
+expect_equal(
+  evalq(format(pca_outcome_skipped("no HVGs")), genv),
+  'PcaOutcome::Skipped { reason: "no HVGs", n_cells: 0 }'
+)
+# too wide for one line, so one field per line with the nested enum inline
+expect_equal(
+  evalq(format(pca_outcome_done(matrix(0, 100, 6), "randomised")), genv),
+  c(
+    "PcaOutcome::Done {",
+    "  scores: <matrix 100 x 6>,",
+    "  solver: PcaSolver::Randomised { oversample: 10, n_iter: 2 },",
+    "}"
+  )
+)
+expect_equal(
+  evalq(format(pca_outcome_done(1:100, "exact")), genv),
+  "PcaOutcome::Done { scores: <integer[100]>, solver: PcaSolver::Exact }"
+)
+expect_stdout(evalq(print(pca_solver_exact()), genv), "PcaSolver::Exact")
+
 # a nested default that cannot be built from its name is caught
 bad_nested <- param_enum(
   name = "wrapper",

@@ -78,7 +78,18 @@ env <- new.env()
 rendered <- devforge:::render_specs(list(pca_solver = pca_solver))
 eval(parse(text = rendered$enums), envir = env)
 
-str(env$pca_solver_randomised(n_iter = 4L))
+str(unclass(env$pca_solver_randomised(n_iter = 4L)))
+```
+
+Every enum also gets `format()` and `print()` methods, Rust `{:?}` style. One
+line when it fits, one field per line when it does not, with matrices and data
+frames summarised and nested enums printed inline. (Inside a package the
+methods are registered; here they live in `env`, hence the `evalq()`.)
+
+```{r}
+#| label: print
+evalq(print(pca_solver_randomised(n_iter = 4L)), env)
+evalq(print(pca_solver_exact()), env)
 ```
 
 # Coercion, checking and matching
@@ -214,7 +225,7 @@ rendered <- devforge:::render_specs(list(
 env <- new.env()
 eval(parse(text = unlist(rendered)), envir = env)
 
-str(env$params_pca(svd_solver = "randomised")$svd_solver)
+evalq(print(params_pca(svd_solver = "randomised")$svd_solver), env)
 ```
 
 One restriction: `param_defaults()` blocks cannot carry an enum. They get merged
@@ -265,6 +276,17 @@ env$match_pca_outcome(
   res,
   done = \(v) sprintf("%d PCs via %s", ncol(v$scores), v$solver$variant),
   skipped = \(v) v$reason
+)
+```
+
+Bulky payloads print as a summary, and a value too wide for one line goes one
+field per line:
+
+```{r}
+#| label: outcome-print
+evalq(
+  print(pca_outcome_done(matrix(0, 500, 30), solver = "randomised")),
+  env
 )
 ```
 

@@ -21,6 +21,10 @@
   the params checker delegates to the enum's checker. `param_defaults()`
   rejects enum fields for now, since `modifyList()` would merge the fields of
   two different variants.
+- Every enum gets `format()` and `print()` methods in Rust `{:?}` style:
+  `PcaSolver::Randomised { oversample: 10, n_iter: 2 }` on one line when it
+  fits, one field per line when it does not. Matrices and data frames print as
+  `<matrix 500 x 30>`, long vectors as `<double[1000]>`, nested enums inline.
 - Enums go into their own `R/enums-generated.R` with a self-contained helper,
   so a package with enums and no params specs gets just that one file. The
   params prelude is unchanged for packages without enums.

@@ -63,6 +63,78 @@ check_enum_value <- function(x, variants, label) {
     }
   }
   TRUE
+}
+
+# Base R only below, so the enums file adds no Imports beyond checkmate.
+
+#\' Format one field of an enum value
+#\'
+#\' @description Scalars print as values, short vectors as `c(...)`, nested
+#\' enums through their own `format()` method, and anything bulky as a summary
+#\' such as `<matrix 100 x 30>`.
+#\'
+#\' @param x The field value.
+#\'
+#\' @returns Character vector of lines, usually one.
+#\'
+#\' @keywords internal
+format_enum_field <- function(x) {
+  if (is.null(x)) {
+    return("NULL")
+  }
+  if (is.list(x) && is.character(x[["variant"]]) && is.object(x)) {
+    return(format(x))
+  }
+  if (is.data.frame(x) || is.matrix(x)) {
+    return(sprintf("<%s %s>", class(x)[[1L]], paste(dim(x), collapse = " x ")))
+  }
+  if (is.atomic(x) && !is.object(x) && length(x) <= 5L && length(x) > 0L) {
+    values <- if (is.character(x)) encodeString(x, quote = "\\"") else format(x)
+    values <- trimws(values)
+    return(if (length(x) == 1L) values else sprintf("c(%s)", toString(values)))
+  }
+  if (is.atomic(x) && !is.object(x)) {
+    return(sprintf("<%s[%d]>", typeof(x), length(x)))
+  }
+  sprintf("<%s>", class(x)[[1L]])
+}
+
+#\' Format an enum value
+#\'
+#\' @description Rust `{:?}` style: `Enum::Variant { field: value }` on one line
+#\' when it fits in 80 characters, otherwise one field per line.
+#\'
+#\' @param x An enum value.
+#\' @param enum String. The enum class.
+#\'
+#\' @returns Character vector of lines.
+#\'
+#\' @keywords internal
+format_enum_value <- function(x, enum) {
+  head <- paste0(enum, "::", sub(paste0("^", enum, "_"), "", class(x)[[1L]]))
+  fields <- setdiff(names(x), "variant")
+  if (length(fields) == 0L) {
+    return(head)
+  }
+  values <- lapply(fields, \\(f) format_enum_field(x[[f]]))
+  one_line <- sprintf(
+    "%s { %s }",
+    head,
+    paste0(fields, ": ", unlist(values), collapse = ", ")
+  )
+  if (all(lengths(values) == 1L) && nchar(one_line) <= 80L) {
+    return(one_line)
+  }
+  body <- Map(
+    \\(field, value) {
+      value[[1L]] <- paste0(field, ": ", value[[1L]])
+      value[[length(value)]] <- paste0(value[[length(value)]], ",")
+      paste0("  ", value)
+    },
+    fields,
+    values
+  )
+  c(paste(head, "{"), unlist(body, use.names = FALSE), "}")
 }'
 
 ## constructors ----------------------------------------------------------------
@@ -334,6 +406,45 @@ emit_enum_match <- function(enum) {
   )
 }
 
+#' Generated `format()` and `print()` methods for an enum
+#'
+#' @description Both on the enum class, so every variant shares them and a
+#' hand-written method on a variant class still wins.
+#'
+#' @param enum A `devforge_enum`.
+#'
+#' @returns Character vector of R source lines, roxygen included.
+#'
+#' @keywords internal
+emit_enum_print <- function(enum) {
+  checkmate::assertClass(enum, "devforge_enum")
+  c(
+    sprintf("#' Format a %s", enum$title),
+    "#'",
+    sprintf("#' @param x A `%s`.", enum$class),
+    "#' @param ... Unused.",
+    "#'",
+    "#' @returns Character vector of lines, in Rust `{:?}` style.",
+    "#'",
+    "#' @export",
+    sprintf("format.%s <- function(x, ...) {", enum$class),
+    indent(sprintf("format_enum_value(x, \"%s\")", enum$class)),
+    "}",
+    "",
+    sprintf("#' Print a %s", enum$title),
+    "#'",
+    sprintf("#' @param x A `%s`.", enum$class),
+    "#' @param ... Passed on to [format()].",
+    "#'",
+    "#' @returns `x`, invisibly.",
+    "#'",
+    "#' @export",
+    sprintf("print.%s <- function(x, ...) {", enum$class),
+    indent(c("cat(format(x, ...), sep = \"\\n\")", "invisible(x)")),
+    "}"
+  )
+}
+
 #' Everything one enum emits
 #'
 #' @param enum A `devforge_enum`.
@@ -353,6 +464,8 @@ emit_enum <- function(enum) {
     emit_enum_as(enum),
     "",
     emit_enum_match(enum),
+    "",
+    emit_enum_print(enum),
     "",
     emit_enum_checker(enum),
     ""
