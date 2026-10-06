@@ -18,11 +18,11 @@ author:
 
 Strings are R's enums. `svd_solver = "randomised"`, a `match.arg()`, a
 `switch()` somewhere downstream. Fine while the variants carry nothing. It falls
-apart the moment one of them does. The kNN params in bixverse carry `n_trees`
-for Annoy, `m` and `ef_search` for HNSW, `n_list` and `n_probe` for IVF, all
-flat in one list. Pass `n_trees` with `"hnsw"` and it gets silently ignored. The
-roxygen ends up saying "Annoy param:" and "ignored for `grnboost2`", which is
-documentation doing the job of a type.
+apart the moment one of them does. Take an optimiser argument: `"sgd"` wants a
+`momentum`, `"adam"` wants `beta1` and `beta2`, `"lbfgs"` wants a `history`
+size. Put them all flat in one params list and pass `momentum` with `"adam"`:
+it gets silently ignored. The roxygen ends up saying "only used for `sgd`" and
+"ignored for `lbfgs`", which is documentation doing the job of a type.
 
 Rust solves this with data-carrying enums: each variant owns its fields, a
 `match` has to cover every variant, and `impl` blocks hang behaviour off the
@@ -65,9 +65,9 @@ cat(devforge:::emit_variant_ctor(pca_solver, "randomised"), sep = "\n")
 ```
 
 A value is a plain list. `variant` is an element, not an attribute, because
-`c()` and `modifyList()` drop attributes and because it is the one thing the
-Rust side has to read: `list.get("variant")`. The class vector is there for S3
-dispatch, see below.
+`c()` and `modifyList()` drop attributes, and because a compiled backend reads
+a list element without any ceremony: `list.get("variant")` in Rust, say. The
+class vector is there for S3 dispatch, see below.
 
 To play with the generated code, render it and evaluate it into an environment.
 In a package, `forge_params()` writes it to `R/enums-generated.R` instead.
@@ -219,7 +219,8 @@ str(env$params_pca(svd_solver = "randomised")$svd_solver)
 
 One restriction: `param_defaults()` blocks cannot carry an enum. They get merged
 with `modifyList()`, which recurses into the tagged list and would happily glue
-the HNSW fields onto an Annoy variant. So the kNN block stays flat for now.
+the `adam` fields onto an `sgd` variant. Shared defaults blocks stay flat for
+now.
 
 # Beyond parameters
 
@@ -242,7 +243,7 @@ pca_outcome <- param_enum(
   variants = list(
     done = p_variant(
       "The decomposition finished.",
-      scores = p_free(doc = "Cell x PC matrix."),
+      scores = p_free(doc = "Observation x component matrix."),
       solver = p_enum("pca_solver", doc = "The solver that ran.")
     ),
     skipped = p_variant(
@@ -281,8 +282,9 @@ flags it as stale until then.
 
 # What is next
 
-The Rust half. A `TryFrom<&Robj>` per enum that reads `variant` and its fields
-would replace the `parse_*()` functions and the copy-pasted
-`unwrap_or(Default)` blocks in the `extendr` wrappers. And the merge semantics
-for enums inside defaults blocks, so the kNN params can finally carry their
-fields per method. Watch this space.
+The other side of the FFI. Packages that hand their params to Rust through
+`extendr` still parse the strings again over there. A generated
+`TryFrom<&Robj>` per enum, reading `variant` and its fields, would make the
+spec the single source for both languages. And merge semantics for enums
+inside defaults blocks, so shared blocks can carry their fields per variant
+too. Watch this space.
