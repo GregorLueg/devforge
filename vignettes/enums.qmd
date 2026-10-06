@@ -168,6 +168,7 @@ pca_solver <- param_enum(
   variants = pca_solver$variants,
   methods = list(is_exact = "Is the solver exact")
 )
+
 cat(devforge:::emit_enum_generics(list(pca_solver)), sep = "\n")
 ```
 
