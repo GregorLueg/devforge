@@ -42,39 +42,42 @@ A field carries a default, a type, an optional range, and its roxygen prose.
 ```{r}
 #| label: spec
 spec <- param_spec(
-  name = "kernel",
-  title = "Wrapper function for the diffusion kernel parameters",
-  checker = "Kernel",
-  label = "kernel parameters",
+  name = "optimiser",
+  title = "Wrapper function for the optimiser parameters",
+  checker = "Optimiser",
+  label = "optimiser parameters",
   fields = list(
-    sigma2 = p_dbl(1.0, doc = "Bandwidth parameter."),
-    add_diag = p_dbl(1.0, doc = "Regularisation added to the diagonal."),
-    a = p_dbl(3.0, doc = "Regularisation parameter for the `pstep` kernel."),
-    p = p_int(5L, doc = "Number of steps for the `pstep` kernel.")
+    learning_rate = p_dbl(0.01, range = "(0,)", doc = "Initial learning rate."),
+    min_learning_rate = p_dbl(
+      1e-5,
+      range = "(0,)",
+      doc = "Floor the learning rate decays towards."
+    ),
+    max_iter = p_int(1000L, range = "[1,)", doc = "Maximum iterations."),
+    tol = p_dbl(1e-6, range = "(0,)", doc = "Convergence tolerance.")
   ),
   extra_ctor = quote({
-    checkmate::assertTRUE(a >= 2, .var.name = "a >= 2")
-    checkmate::assertTRUE(p > 0L, .var.name = "p > 0")
+    checkmate::assertTRUE(
+      min_learning_rate <= learning_rate,
+      .var.name = "min_learning_rate <= learning_rate"
+    )
   }),
   extra_check = quote({
-    if (x$a < 2) {
-      return("Parameter `a` must be >= 2 for the pstep kernel.")
-    }
-    if (x$p < 1L) {
-      return("Parameter `p` must be a positive integer.")
+    if (x$min_learning_rate > x$learning_rate) {
+      return("`min_learning_rate` must not exceed `learning_rate`.")
     }
   })
 )
 ```
 
-That is the real `genewalkR::params_kernel()` spec, see [here](https://gregorlueg.github.io/genewalkR/reference/params_kernel.html). 
-Note what is *not* in it: the qassert strings, the type annotations in the 
-roxygen, the documented defaults, the `must.include` name list, the rule tables, 
-and the assert sibling. All of those are derived, which is exactly why they 
+Note what is *not* in it: the qassert strings, the type annotations in the
+roxygen, the documented defaults, the `must.include` name list, the rule tables,
+and the assert sibling. All of those are derived, which is exactly why they
 cannot drift.
 
-The two `extra_*` slots are the escape hatch. Cross-field rules like `a >= 2`
-cannot be expressed as a per-field pattern, so they go in verbatim. The
+The two `extra_*` slots are the escape hatch. Cross-field rules like
+`min_learning_rate <= learning_rate` cannot be expressed as a per-field
+pattern, so they go in verbatim. The
 constructor asserts, the checker returns a string: that is the only difference
 between the two, and both come from one place in the spec.
 

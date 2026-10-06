@@ -12,7 +12,7 @@ template:
 
 home:
   title: "devforge"
-  description: "Development tooling for the bixverse family of R packages"
+  description: "Development tooling for R packages, built for the bixverse family"
 
 navbar:
   structure:
