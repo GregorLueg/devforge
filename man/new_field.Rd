@@ -15,6 +15,8 @@ new_field(
   check_as = NULL,
   from = NULL,
   overrides = NULL,
+  drop = NULL,
+  strict = FALSE,
   required = FALSE,
   doc = NULL
 )
@@ -46,6 +48,12 @@ base the caller's list is merged into, see \code{\link[=p_merge]{p_merge()}}.}
 
 \item{overrides}{List, language object or \code{NULL}. For \code{"merge"} fields,
 constructor-specific defaults layered over \code{from}.}
+
+\item{drop}{Character vector or \code{NULL}. For \code{"merge"} fields, elements
+removed from the base before the merge.}
+
+\item{strict}{Boolean. For \code{"merge"} fields, reject caller elements that are
+not in the base. Defaults to \code{FALSE}.}
 
 \item{required}{Boolean. The formal has no default and the caller must
 supply it. \code{default} is ignored. Defaults to \code{FALSE}.}
