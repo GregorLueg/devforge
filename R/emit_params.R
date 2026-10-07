@@ -97,6 +97,15 @@ field_doc_prose <- function(field) {
       sprintf(" See [params_%s()] for the available elements.", field$from)
     )
   }
+  if (length(field$drop) > 0L) {
+    parts <- paste0(
+      parts,
+      sprintf(" Without %s.", paste0("`", field$drop, "`", collapse = ", "))
+    )
+  }
+  if (isTRUE(field$strict)) {
+    parts <- paste0(parts, " Unknown elements are an error.")
+  }
   if (identical(field$type, "choice")) {
     parts <- paste0(
       parts,
@@ -151,7 +160,8 @@ merge_item_prose <- function(field, name) {
 #'
 #' @description `name <- utils::modifyList(base, name, keep.null = TRUE)`, with
 #' the overrides layered between the base and the caller's list when there are
-#' any.
+#' any. With `drop` or `strict` the base is bound to `<name>_base` first, so
+#' elements can be removed from it and the caller's names checked against it.
 #'
 #' @param field A `devforge_field` of type `"merge"`.
 #' @param name String. The field name.
@@ -181,11 +191,36 @@ emit_merge <- function(field, name) {
       keep.null = TRUE
     ))
   }
-  deparse_block(call(
-    "<-",
-    as.name(name),
-    as.call(list(quote(utils::modifyList), base, user, keep.null = TRUE))
-  ))
+  pre <- character(0)
+  if (length(field$drop) > 0L || isTRUE(field$strict)) {
+    base_name <- paste0(name, "_base")
+    pre <- deparse_block(call("<-", as.name(base_name), base))
+    if (length(field$drop) > 0L) {
+      pre <- c(
+        pre,
+        sprintf("%s[%s] <- NULL", base_name, deparse_value(field$drop))
+      )
+    }
+    if (isTRUE(field$strict)) {
+      pre <- c(
+        pre,
+        sprintf(
+          "checkmate::assertSubset(names(%s), names(%s))",
+          name,
+          base_name
+        )
+      )
+    }
+    base <- as.name(base_name)
+  }
+  c(
+    pre,
+    deparse_block(call(
+      "<-",
+      as.name(name),
+      as.call(list(quote(utils::modifyList), base, user, keep.null = TRUE))
+    ))
+  )
 }
 
 #' The returned list of a generated constructor

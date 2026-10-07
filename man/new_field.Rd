@@ -16,6 +16,8 @@ new_field(
   from = NULL,
   overrides = NULL,
   enum = NULL,
+  drop = NULL,
+  strict = FALSE,
   required = FALSE,
   doc = NULL
 )
@@ -50,6 +52,12 @@ constructor-specific defaults layered over \code{from}.}
 
 \item{enum}{String or \code{NULL}. For \code{"enum"} fields, the name of the
 \code{\link[=param_enum]{param_enum()}} the field takes a variant of.}
+
+\item{drop}{Character vector or \code{NULL}. For \code{"merge"} fields, elements
+removed from the base before the merge.}
+
+\item{strict}{Boolean. For \code{"merge"} fields, reject caller elements that are
+not in the base. Defaults to \code{FALSE}.}
 
 \item{required}{Boolean. The formal has no default and the caller must
 supply it. \code{default} is ignored. Defaults to \code{FALSE}.}

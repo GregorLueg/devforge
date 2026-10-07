@@ -4,7 +4,14 @@
 \alias{p_merge}
 \title{Merged sub-list field}
 \usage{
-p_merge(from, default = list(), overrides = NULL, doc = NULL)
+p_merge(
+  from,
+  default = list(),
+  overrides = NULL,
+  drop = NULL,
+  strict = FALSE,
+  doc = NULL
+)
 }
 \arguments{
 \item{from}{String or language object. The name of a spec in the same
@@ -19,6 +26,14 @@ other arguments. A language \code{from} contributes nothing to the checker.}
 defaults applied over \code{from} before the caller's list. A language object may
 reference the other formals, e.g.
 \code{quote(list(k = n_components * 2L))}. Defaults to \code{NULL}.}
+
+\item{drop}{Character vector or \code{NULL}. Elements removed from the base
+before the merge, for a constructor that sets them itself or has no use for
+them. They drop out of the checker too. Defaults to \code{NULL}.}
+
+\item{strict}{Boolean. The constructor rejects caller elements that are not
+in the base (after \code{drop}) instead of splicing them through unchecked.
+Defaults to \code{FALSE}.}
 
 \item{doc}{String or \code{NULL}. Roxygen prose for this field.}
 }

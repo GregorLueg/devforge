@@ -44,6 +44,17 @@
 - Title, docs and the params vignette use package agnostic examples. devforge
   is built for the bixverse family but works for any R package.
 
+# devforge 0.0.7
+
+## Feature
+
+- `p_merge()` gains `drop` and `strict`. `drop` removes elements from the base
+  before the merge, for a constructor that sets them itself or has no use for
+  them; they drop out of the checker too, and dropping a name the base does
+  not have errors at generation. `strict = TRUE` makes the constructor reject
+  caller elements that are not in the base instead of splicing them through.
+  Merges without either emit exactly as before.
+
 # devforge 0.0.6
 
 ## Features
