@@ -23,8 +23,10 @@ format.devforge_field <- function(x, ...) {
     ),
     enum = to_pascal_case(x$enum),
     merge = sprintf(
-      "merge(%s)",
-      if (is.character(x$from)) x$from else deparse_value(x$from)
+      "merge(%s%s%s)",
+      if (is.character(x$from)) x$from else deparse_value(x$from),
+      if (is.null(x$drop)) "" else paste0(", drop = ", deparse_value(x$drop)),
+      if (isTRUE(x$strict)) ", strict = TRUE" else ""
     ),
     free = "any",
     x$type
