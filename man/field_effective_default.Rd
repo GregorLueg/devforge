@@ -15,6 +15,6 @@ The value that the field takes when the caller passes nothing.
 \description{
 For a choice field the formal default is the whole set of
 choices, but what is documented is the first one, which is what \code{match.arg()}
-picks.
+picks. An enum field documents the variant name it defaults to.
 }
 \keyword{internal}

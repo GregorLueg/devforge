@@ -4,7 +4,7 @@
 \name{devforge-package}
 \alias{devforge}
 \alias{devforge-package}
-\title{devforge: Development tooling for the bixverse family of R packages}
+\title{devforge: Development tooling for R packages, built for the bixverse family}
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 

@@ -1,0 +1,313 @@
+---
+title: "Rust style enums"
+date: last-modified
+date-format: YYYY-MM-DD
+vignette: >
+  %\VignetteIndexEntry{Rust style enums}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+knitr:
+  opts_chunk:
+    collapse: true
+    comment: '#>'
+author:
+  - name: Gregor Lueg
+---
+
+# The problem
+
+Strings are R's enums. `svd_solver = "randomised"`, a `match.arg()`, a
+`switch()` somewhere downstream. Fine while the variants carry nothing. It falls
+apart the moment one of them does. Take an optimiser argument: `"sgd"` wants a
+`momentum`, `"adam"` wants `beta1` and `beta2`, `"lbfgs"` wants a `history`
+size. Put them all flat in one params list and pass `momentum` with `"adam"`:
+it gets silently ignored. The roxygen ends up saying "only used for `sgd`" and
+"ignored for `lbfgs`", which is documentation doing the job of a type.
+
+Rust solves this with data-carrying enums: each variant owns its fields, a
+`match` has to cover every variant, and `impl` blocks hang behaviour off the
+type. `devforge` generates the closest R equivalent. Same deal as the params
+wrappers: a spec goes in, plain `checkmate` code comes out, and no package
+gains a runtime dependency on `devforge`.
+
+```{r}
+#| label: setup
+library(devforge)
+```
+
+# Declaring an enum
+
+A `param_enum()` holds the variants, each a `p_variant()` with its own doc and
+fields. The fields are the same `p_int()` and friends the params specs use.
+
+```{r}
+#| label: solver
+pca_solver <- param_enum(
+  name = "pca_solver",
+  title = "PCA solver",
+  variants = list(
+    covariance = p_variant("Eigendecomposition of the cross-product."),
+    randomised = p_variant(
+      "Randomised SVD. Approximate, the trailing components the least so.",
+      oversample = p_int(10L, range = "[0,)", doc = "Extra columns sampled."),
+      n_iter = p_int(2L, range = "[0,)", doc = "Power iterations.")
+    ),
+    exact = p_variant("Lanczos on sparse input, a full SVD on dense.")
+  )
+)
+```
+
+Every variant gets a constructor, validated like any `params_*()` function:
+
+```{r}
+#| label: ctor
+cat(devforge:::emit_variant_ctor(pca_solver, "randomised"), sep = "\n")
+```
+
+A value is a plain list. `variant` is an element, not an attribute, because
+`c()` and `modifyList()` drop attributes, and because a compiled backend reads
+a list element without any ceremony: `list.get("variant")` in Rust, say. The
+class vector is there for S3 dispatch, see below.
+
+To play with the generated code, render it and evaluate it into an environment.
+In a package, `forge_params()` writes it to `R/enums-generated.R` instead.
+
+```{r}
+#| label: eval
+env <- new.env()
+rendered <- devforge:::render_specs(list(pca_solver = pca_solver))
+eval(parse(text = rendered$enums), envir = env)
+
+str(unclass(env$pca_solver_randomised(n_iter = 4L)))
+```
+
+Every enum also gets `format()` and `print()` methods, Rust `{:?}` style. One
+line when it fits, one field per line when it does not, with matrices and data
+frames summarised and nested enums printed inline. (Inside a package the
+methods are registered; here they live in `env`, hence the `evalq()`.)
+
+```{r}
+#| label: print
+evalq(print(pca_solver_randomised(n_iter = 4L)), env)
+evalq(print(pca_solver_exact()), env)
+```
+
+# Coercion, checking and matching
+
+`as_pca_solver()` takes a variant name and builds it with its defaults, so
+callers keep typing strings. Hand it a list and it gets checked and its class
+rebuilt, which is what you want after a round trip through Rust or `saveRDS()`.
+
+```{r}
+#| label: as
+class(env$as_pca_solver("exact"))
+class(env$as_pca_solver(unclass(env$pca_solver_randomised())))
+```
+
+The checker is strict about names. A field that belongs to another variant is
+an error, which is the entire point:
+
+```{r}
+#| label: check
+x <- env$pca_solver_exact()
+x$n_iter <- 4L
+env$checkPcaSolver(x)
+```
+
+`match_pca_solver()` takes one function per variant. Each gets the whole value,
+so fields are read by name. Reorder the fields in the spec and nothing silently
+swaps.
+
+```{r}
+#| label: match
+n_components <- \(solver, k) {
+  env$match_pca_solver(
+    solver,
+    covariance = \(v) k,
+    randomised = \(v) k + v$oversample,
+    exact = \(v) k
+  )
+}
+n_components("randomised", 30L)
+```
+
+Leave an arm out and it errors on every call, not just when the missing
+variant turns up. That is as close to Rust's compile-time check as R gets:
+
+```{r}
+#| label: match-missing
+#| error: true
+env$match_pca_solver("covariance", covariance = \(v) 1)
+```
+
+`.default` is the `_ =>` arm, for when you mean it:
+
+```{r}
+#| label: match-default
+env$match_pca_solver(
+  "exact",
+  randomised = \(v) "approx",
+  .default = \(v) "exact"
+)
+```
+
+Why not [matchr](https://cran.r-project.org/package=matchr)? It shares the
+representation, but its `Match()` only errors when the value in hand hits no
+arm, destructures by position, does no validation, and every variant name used
+in an arm trips `R CMD check` with "no visible global function definition".
+
+# Impl blocks
+
+Declare methods on the enum and `devforge` emits one S3 generic per method:
+
+```{r}
+#| label: methods
+pca_solver <- param_enum(
+  name = "pca_solver",
+  title = "PCA solver",
+  variants = pca_solver$variants,
+  methods = list(is_exact = "Is the solver exact")
+)
+
+cat(devforge:::emit_enum_generics(list(pca_solver)), sep = "\n")
+```
+
+The bodies you write by hand under `R/`, as ordinary S3 methods. Per variant
+class, or once for the enum class as the fallback arm:
+
+```r
+#' @export
+is_exact.PcaSolver <- function(self, ...) TRUE
+
+#' @export
+is_exact.PcaSolver_Randomised <- function(self, ...) FALSE
+```
+
+They stay in `R/` on purpose: linted, covered, debuggable. What `devforge` adds
+is the exhaustiveness check. `forge_params()` and `params_up_to_date()` parse
+`R/` and error when a variant has neither its own method nor the fallback:
+
+```
+Error: Enum methods without an implementation. Add a method per variant or one for the enum class:
+  is_exact() on PcaSolver: covariance, exact
+```
+
+Add a variant to the spec, forget the method, and the drift CI goes red. Pretty
+much what `rustc` would tell you, minus the compile.
+
+# Enums in params
+
+A `param_spec()` field takes an enum with `p_enum()`. The formal defaults to the
+variant name, the constructor coerces with `as_pca_solver()`, and the returned
+list carries the full variant:
+
+```{r}
+#| label: params
+spec_pca <- param_spec(
+  name = "pca",
+  title = "Wrapper function for the PCA parameters",
+  fields = list(
+    no_pcs = p_int(30L, range = "[1,)", doc = "Number of PCs."),
+    svd_solver = p_enum("pca_solver", "covariance", doc = "Which solver.")
+  )
+)
+cat(devforge:::emit_ctor(spec_pca), sep = "\n")
+```
+
+The params checker hands the field to `checkPcaSolver()`, so a stray `n_iter`
+on the `"exact"` solver fails there as well.
+
+```{r}
+#| label: params-eval
+rendered <- devforge:::render_specs(list(
+  pca = spec_pca,
+  pca_solver = pca_solver
+))
+env <- new.env()
+eval(parse(text = unlist(rendered)), envir = env)
+
+evalq(print(params_pca(svd_solver = "randomised")$svd_solver), env)
+```
+
+One restriction: `param_defaults()` blocks cannot carry an enum. They get merged
+with `modifyList()`, which recurses into the tagged list and would happily glue
+the `adam` fields onto an `sgd` variant. Shared defaults blocks stay flat for
+now.
+
+# Beyond parameters
+
+Nothing about the enums is params specific. The params side is one field type
+on top. A variant field can be anything a spec field can be, bar `p_merge()`:
+
+- no default, and the constructor requires it
+- `p_free()`, for a matrix, a `data.table` or anything else a pattern cannot
+  express; the checker only demands it is there
+- `p_enum()`, for a nested enum, checked with that enum's own checker
+
+That makes result types straightforward. A PCA run either finished, carrying
+its scores and the solver that produced them, or got skipped for a reason:
+
+```{r}
+#| label: outcome
+pca_outcome <- param_enum(
+  name = "pca_outcome",
+  title = "PCA outcome",
+  variants = list(
+    done = p_variant(
+      "The decomposition finished.",
+      scores = p_free(doc = "Observation x component matrix."),
+      solver = p_enum("pca_solver", doc = "The solver that ran.")
+    ),
+    skipped = p_variant(
+      "Nothing to decompose.",
+      reason = p_chr(doc = "Why it was skipped.")
+    )
+  )
+)
+
+rendered <- devforge:::render_specs(list(
+  pca_outcome = pca_outcome,
+  pca_solver = pca_solver
+))
+env <- new.env()
+eval(parse(text = rendered$enums), envir = env)
+
+res <- env$pca_outcome_done(matrix(rnorm(6), 3, 2), solver = "exact")
+env$match_pca_outcome(
+  res,
+  done = \(v) sprintf("%d PCs via %s", ncol(v$scores), v$solver$variant),
+  skipped = \(v) v$reason
+)
+```
+
+Bulky payloads print as a summary, and a value too wide for one line goes one
+field per line:
+
+```{r}
+#| label: outcome-print
+evalq(
+  print(pca_outcome_done(matrix(0, 500, 30), solver = "randomised")),
+  env
+)
+```
+
+A variant with required fields cannot be built from its name, and
+`as_pca_outcome("done")` tells you which constructor to call instead.
+
+# Running it
+
+Enums live in `inst/params/*.R` next to the specs, and the same
+`forge_params()` call picks them up. They go into their own file,
+`R/enums-generated.R`, with a small self-contained helper at the top, so a
+package with enums and no params specs gets just that one file. Delete the
+last enum and the next `forge_params()` removes the file; `params_up_to_date()`
+flags it as stale until then.
+
+# What is next
+
+The other side of the FFI. Packages that hand their params to Rust through
+`extendr` still parse the strings again over there. A generated
+`TryFrom<&Robj>` per enum, reading `variant` and its fields, would make the
+spec the single source for both languages. And merge semantics for enums
+inside defaults blocks, so shared blocks can carry their fields per variant
+too. Watch this space.

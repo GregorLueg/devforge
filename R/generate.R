@@ -22,7 +22,8 @@ section_header <- function(title) {
 GENERATED_FILES <- c(
   prelude = "R/params-prelude-generated.R",
   params = "R/params-generated.R",
-  checkers = "R/checkmate-params-generated.R"
+  checkers = "R/checkmate-params-generated.R",
+  enums = "R/enums-generated.R"
 )
 
 #' Group specs by the checker they declare
@@ -62,32 +63,84 @@ dedupe_checkers <- function(specs) {
 
 #' Render specs into the source of the generated files
 #'
-#' @param specs Named list of `devforge_spec` objects.
+#' @param specs Named list of `devforge_spec` and `devforge_enum` objects, as
+#' from [load_specs()].
 #'
-#' @returns A named list of character vectors, one per entry of
-#' `GENERATED_FILES`, without the generated header.
+#' @returns A named list of character vectors, keyed like `GENERATED_FILES`,
+#' without the generated header. The three params files only when there are
+#' specs, the enums file only when there are enums.
 #'
 #' @keywords internal
 render_specs <- function(specs) {
-  checkmate::assertList(specs, types = "devforge_spec", min.len = 1L)
-  params <- purrr::map(specs, \(s) c(emit_ctor(s), ""))
-  checkers <- purrr::map(
-    dedupe_checkers(specs),
-    \(s) c(emit_checker(s, specs), "")
+  checkmate::assertList(
+    specs,
+    types = c("devforge_spec", "devforge_enum"),
+    min.len = 1L
   )
-  list(
-    prelude = emit_prelude(),
-    params = c(
-      section_header("parameter wrappers"),
-      "",
-      unlist(params, use.names = FALSE)
-    ),
-    checkers = c(
-      section_header("parameter checkers"),
-      "",
-      unlist(checkers, use.names = FALSE)
+  enums <- spec_enums(specs)
+  specs <- purrr::keep(specs, \(s) inherits(s, "devforge_spec"))
+  assert_enum_refs(specs, enums)
+  out <- list()
+  if (length(specs) > 0L) {
+    params <- purrr::map(specs, \(s) c(emit_ctor(s), ""))
+    checkers <- purrr::map(
+      dedupe_checkers(specs),
+      \(s) c(emit_checker(s, specs), "")
     )
-  )
+    out <- list(
+      prelude = emit_prelude(),
+      params = c(
+        section_header("parameter wrappers"),
+        "",
+        unlist(params, use.names = FALSE)
+      ),
+      checkers = c(
+        section_header("parameter checkers"),
+        "",
+        unlist(checkers, use.names = FALSE)
+      )
+    )
+  }
+  if (length(enums) > 0L) {
+    out$enums <- emit_enums_file(enums)
+  }
+  out
+}
+
+#' Remove generated files whose specs are gone
+#'
+#' @description Only touches files under `GENERATED_FILES` that start with the
+#' generated header, e.g. `R/enums-generated.R` after the last enum was
+#' deleted from the specs.
+#'
+#' @param pkg String. Path to the package root.
+#' @param keep Character vector. Keys of `GENERATED_FILES` still rendered.
+#'
+#' @returns Character vector of the removed paths, invisibly.
+#'
+#' @keywords internal
+remove_orphans <- function(pkg, keep) {
+  checkmate::assertDirectoryExists(pkg)
+  checkmate::qassert(keep, "S*")
+  orphans <- file.path(pkg, GENERATED_FILES[!names(GENERATED_FILES) %in% keep])
+  orphans <- purrr::keep(orphans, \(path) {
+    file.exists(path) &&
+      identical(readLines(path, n = 1L, warn = FALSE), GENERATED_HEADER[[1L]])
+  })
+  unlink(orphans)
+  invisible(orphans)
+}
+
+#' The enums among a package's specs
+#'
+#' @param specs Named list, as from [load_specs()].
+#'
+#' @returns Named list of `devforge_enum` objects.
+#'
+#' @keywords internal
+spec_enums <- function(specs) {
+  checkmate::assertList(specs)
+  purrr::keep(specs, \(s) inherits(s, "devforge_enum"))
 }
 
 #' Run air over a set of files
@@ -166,9 +219,12 @@ warn_line_width <- function(paths, width = 80L) {
 
 #' Generate the parameter wrappers and their checkmate extensions
 #'
-#' @description Reads every spec under `inst/params/`, writes the three
-#' generated files under `R/` and formats them with air. The generated files
-#' are meant to be committed.
+#' @description Reads every spec and enum under `inst/params/`, writes the
+#' generated files under `R/` and formats them with air: the three params files
+#' when there are specs, `R/enums-generated.R` when there are enums. A
+#' generated file whose specs are all gone is removed. The generated files are
+#' meant to be committed. Errors when an enum method lacks an implementation
+#' for some variant, see [param_enum()].
 #'
 #' @param pkg String. Path to the package root. Defaults to `"."`.
 #' @param .verbose Boolean. Report what was written. Defaults to `TRUE`.
@@ -181,7 +237,9 @@ forge_params <- function(pkg = ".", .verbose = TRUE) {
   checkmate::qassert(.verbose, "B1")
   specs <- load_specs(pkg)
   rendered <- render_specs(specs)
+  check_enum_methods(pkg, spec_enums(specs))
   paths <- file.path(pkg, GENERATED_FILES[names(rendered)])
+  remove_orphans(pkg, names(rendered))
   write_generated(rendered, paths)
   warn_line_width(paths)
   if (.verbose) {
@@ -198,7 +256,9 @@ forge_params <- function(pkg = ".", .verbose = TRUE) {
 #'
 #' @description Regenerates into a temporary directory and compares. Meant for
 #' CI, so that a hand-edit of a generated file or a spec change that was never
-#' regenerated fails the build.
+#' regenerated fails the build. A leftover generated file whose specs are gone
+#' counts as stale. Also errors when an enum method lacks an implementation for
+#' some variant, see [param_enum()].
 #'
 #' @param pkg String. Path to the package root. Defaults to `"."`.
 #'
@@ -208,7 +268,9 @@ forge_params <- function(pkg = ".", .verbose = TRUE) {
 #' @export
 params_up_to_date <- function(pkg = ".") {
   checkmate::assertDirectoryExists(pkg)
-  rendered <- render_specs(load_specs(pkg))
+  specs <- load_specs(pkg)
+  rendered <- render_specs(specs)
+  check_enum_methods(pkg, spec_enums(specs))
   tmp <- file.path(tempdir(), paste0("devforge-", as.integer(Sys.time())))
   dir.create(file.path(tmp, "R"), recursive = TRUE, showWarnings = FALSE)
   tmp_paths <- file.path(tmp, GENERATED_FILES[names(rendered)])
@@ -224,5 +286,10 @@ params_up_to_date <- function(pkg = ".") {
     )
   })
   unlink(tmp, recursive = TRUE)
+  leftover <- purrr::keep(
+    setdiff(names(GENERATED_FILES), names(rendered)),
+    \(key) file.exists(file.path(pkg, GENERATED_FILES[[key]]))
+  )
+  stale <- c(stale, leftover)
   if (length(stale) == 0L) TRUE else unname(GENERATED_FILES[stale])
 }

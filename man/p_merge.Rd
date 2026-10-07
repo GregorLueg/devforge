@@ -25,7 +25,7 @@ other arguments. A language \code{from} contributes nothing to the checker.}
 \item{overrides}{List, language object or \code{NULL}. Constructor-specific
 defaults applied over \code{from} before the caller's list. A language object may
 reference the other formals, e.g.
-\code{quote(list(k = neighbours_within_batch * 2L))}. Defaults to \code{NULL}.}
+\code{quote(list(k = n_components * 2L))}. Defaults to \code{NULL}.}
 
 \item{drop}{Character vector or \code{NULL}. Elements removed from the base
 before the merge, for a constructor that sets them itself or has no use for

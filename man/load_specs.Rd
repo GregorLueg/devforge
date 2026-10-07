@@ -10,10 +10,11 @@ load_specs(pkg = ".")
 \item{pkg}{String. Path to the package root. Defaults to \code{"."}.}
 }
 \value{
-A named list of \code{devforge_spec} objects, named by their \code{name}.
+A named list of \code{devforge_spec} and \code{devforge_enum} objects, named
+by their \code{name}.
 }
 \description{
 Sources every \code{.R} file under \verb{inst/params/} in a fresh
-environment and returns the \code{devforge_spec} objects it finds, in file then
-definition order.
+environment and returns the \code{devforge_spec} and \code{devforge_enum} objects it
+finds, sorted by name.
 }

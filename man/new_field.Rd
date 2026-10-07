@@ -15,6 +15,7 @@ new_field(
   check_as = NULL,
   from = NULL,
   overrides = NULL,
+  enum = NULL,
   drop = NULL,
   strict = FALSE,
   required = FALSE,
@@ -23,7 +24,7 @@ new_field(
 }
 \arguments{
 \item{type}{String. One of
-\code{c("int", "dbl", "lgl", "chr", "choice", "free", "merge")}.}
+\code{c("int", "dbl", "lgl", "chr", "choice", "free", "merge", "enum")}.}
 
 \item{default}{Any. The default value for the formal.}
 
@@ -48,6 +49,9 @@ base the caller's list is merged into, see \code{\link[=p_merge]{p_merge()}}.}
 
 \item{overrides}{List, language object or \code{NULL}. For \code{"merge"} fields,
 constructor-specific defaults layered over \code{from}.}
+
+\item{enum}{String or \code{NULL}. For \code{"enum"} fields, the name of the
+\code{\link[=param_enum]{param_enum()}} the field takes a variant of.}
 
 \item{drop}{Character vector or \code{NULL}. For \code{"merge"} fields, elements
 removed from the base before the merge.}

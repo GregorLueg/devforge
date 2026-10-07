@@ -1,6 +1,6 @@
 Package: devforge
-Title: Development tooling for the bixverse family of R packages
-Version: 0.0.7
+Title: Development tooling for R packages, built for the bixverse family
+Version: 0.1.0
 Authors@R: 
     person(
         given = "Gregor", 

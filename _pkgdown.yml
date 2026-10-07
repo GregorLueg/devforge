@@ -12,7 +12,7 @@ template:
 
 home:
   title: "devforge"
-  description: "Development tooling for the bixverse family of R packages"
+  description: "Development tooling for R packages, built for the bixverse family"
 
 navbar:
   structure:
@@ -24,6 +24,8 @@ navbar:
       menu:
         - text: Generating parameter wrappers
           href: articles/params.html
+        - text: Rust style enums
+          href: articles/enums.html
     github:
       icon: fab fa-github
       href: https://github.com/GregorLueg/devforge
@@ -34,6 +36,7 @@ articles:
     navbar: Articles
     contents:
       - params
+      - enums
 
 reference:
   # Writing a spec
@@ -42,6 +45,7 @@ reference:
     contents:
       - param_spec
       - param_defaults
+      - param_enum
       - load_specs
   # Field types
   - title: Field types
@@ -54,6 +58,8 @@ reference:
       - p_choice
       - p_free
       - p_merge
+      - p_enum
+      - p_variant
   # Generation
   - title: Generation
     desc: Writing the generated files and keeping them honest
