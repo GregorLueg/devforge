@@ -61,3 +61,8 @@ reference:
       - forge_params
       - params_up_to_date
       - use_drift_ci
+  # Conda
+  - title: Conda
+    desc: Publishing the package to a conda channel
+    contents:
+      - conda_recipe
