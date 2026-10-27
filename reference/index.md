@@ -40,3 +40,10 @@ Writing the generated files and keeping them honest
   : Check whether the generated files match the specs
 - [`use_drift_ci()`](https://gregorlueg.github.io/devforge/reference/use_drift_ci.md)
   : Add the params drift workflow to a package
+
+## Conda
+
+Publishing the package to a conda channel
+
+- [`conda_recipe()`](https://gregorlueg.github.io/devforge/reference/conda_recipe.md)
+  : Write a rattler-build recipe for a package

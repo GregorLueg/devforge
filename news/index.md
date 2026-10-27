@@ -1,5 +1,19 @@
 # Changelog
 
+## devforge 0.0.8
+
+### Feature
+
+- [`conda_recipe()`](https://gregorlueg.github.io/devforge/reference/conda_recipe.md)
+  writes a rattler-build recipe from the DESCRIPTION, for publishing to
+  a conda channel such as prefix.dev. Imports and Depends map to
+  conda-forge `r-` names, Bioconductor packages listed in
+  `Config/devforge/bioconductor` to bioconda’s `bioconductor-` names,
+  base packages drop out. Rust packages get the Rust compiler and build
+  with `CARGO_BUILD_TARGET` unset, which conda’s Rust activation sets
+  and rextendr’s Makevars does not expect. Windows is skipped, a pure R
+  package is noarch.
+
 ## devforge 0.0.7
 
 ### Feature
